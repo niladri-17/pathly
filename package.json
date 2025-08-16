@@ -1,0 +1,11 @@
+{
+  "name": "pathly",
+  "version": "1.0.0",
+  "description": "The pathly project",
+  "license": "ISC",
+  "author": "Niladri Basak",
+  "type": "module",
+  "scripts": {
+    "start:dev": "npx concurrently -n client,server -c green,blue \"npm run dev --prefix client\" \"npm run start:dev --prefix server\""
+  }
+}

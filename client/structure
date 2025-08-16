@@ -1,0 +1,187 @@
+my-react-app/
+├── public/                           # Static files served directly by browser
+│   ├── index.html                   # Main HTML template, app mounting point
+│   ├── favicon.ico                  # Browser tab icon, bookmarks
+│   ├── manifest.json                # PWA configuration, app metadata
+│   ├── robots.txt                   # SEO crawler instructions
+│   └── images/                      # Static images, no bundling needed
+│       └── icons/                   # App icons, PWA icons, favicons
+├── src/
+│   ├── components/                   # Reusable UI building blocks
+│   │   ├── ui/                      # Generic, styled components library
+│   │   │   ├── Button/              # Clickable actions, form submissions
+│   │   │   │   ├── Button.tsx       # Component logic, props, variants
+│   │   │   │   ├── Button.module.scss # Scoped styling, hover states
+│   │   │   │   ├── Button.test.tsx  # Unit tests, accessibility tests
+│   │   │   │   └── index.ts         # Clean exports, public API
+│   │   │   ├── Input/               # Form fields, validation, types
+│   │   │   └── Modal/               # Overlays, dialogs, confirmations
+│   │   ├── common/                  # App-wide shared components
+│   │   │   ├── Header/              # Navigation, user menu, branding
+│   │   │   ├── Footer/              # Links, copyright, social media
+│   │   │   └── Layout/              # Page structure, sidebar, grid
+│   │   └── forms/                   # Complex form compositions
+│   │       ├── ContactForm/         # Contact page, validation, submission
+│   │       └── LoginForm/           # Authentication, error handling
+│   ├── pages/                       # Route-level components (thin orchestrators)
+│   │   ├── Home/                    # Landing page, hero, features overview
+│   │   │   ├── Home.tsx            # Page composition, feature integration
+│   │   │   ├── Home.module.scss    # Page-specific styling, layouts
+│   │   │   ├── Home.test.tsx       # Integration tests, routing tests
+│   │   │   └── index.ts            # Clean export for routing
+│   │   ├── About/                   # Company info, team, mission
+│   │   ├── Dashboard/               # User dashboard, analytics overview
+│   │   └── NotFound/                # 404 error page, navigation help
+│   ├── features/                    # Business logic modules (domain-driven)
+│   │   ├── authentication/          # Login, signup, password management
+│   │   │   ├── components/          # Auth forms, social login, 2FA
+│   │   │   ├── hooks/               # useAuth, useLogin, token management
+│   │   │   ├── services/            # API calls, token refresh, logout
+│   │   │   ├── types/               # User types, auth state, JWT
+│   │   │   └── index.ts             # Feature public API exports
+│   │   ├── user-management/         # Profile, settings, preferences
+│   │   └── product-catalog/         # Products, search, filters, categories
+│   ├── hooks/                       # Global custom React hooks
+│   │   ├── useAuth.ts              # Authentication state, user context
+│   │   ├── useLocalStorage.ts      # Persistent storage, sync state
+│   │   ├── useApi.ts               # API calls, loading, error states
+│   │   └── index.ts                # Hook exports, documentation
+│   ├── services/                    # External API integrations
+│   │   ├── api/                     # REST/GraphQL endpoint handlers
+│   │   │   ├── auth.ts             # Authentication endpoints, tokens
+│   │   │   ├── users.ts            # User CRUD operations, profiles
+│   │   │   ├── products.ts         # Product data, search, filters
+│   │   │   └── index.ts            # API service exports
+│   │   ├── httpClient.ts           # Axios/Fetch configuration, interceptors
+│   │   └── websocket.ts            # Real-time connections, chat, notifications
+│   ├── store/                       # Global state management
+│   │   ├── slices/                  # State slices (Redux/Zustand)
+│   │   │   ├── authSlice.ts        # User authentication state, permissions
+│   │   │   ├── userSlice.ts        # User profile data, preferences
+│   │   │   └── index.ts            # Store slice exports
+│   │   ├── middleware/              # Custom middleware, logging, persistence
+│   │   ├── store.ts                # Store configuration, dev tools
+│   │   └── index.ts                # Store exports, selectors
+│   ├── utils/                       # Pure utility functions
+│   │   ├── formatters.ts           # Date, currency, number formatting
+│   │   ├── validators.ts           # Form validation, email, phone
+│   │   ├── constants.ts            # App constants, magic numbers
+│   │   ├── helpers.ts              # Common functions, array/object utils
+│   │   └── index.ts                # Utility exports
+│   ├── types/                       # TypeScript type definitions
+│   │   ├── auth.ts                 # Authentication types, JWT, permissions
+│   │   ├── user.ts                 # User model, profile, preferences
+│   │   ├── api.ts                  # API response types, error handling
+│   │   └── index.ts                # Type exports, re-exports
+│   ├── styles/                      # Global styling system
+│   │   ├── globals.scss            # CSS reset, base styles, typography
+│   │   ├── variables.scss          # Colors, spacing, breakpoints
+│   │   ├── mixins.scss             # Reusable CSS mixins, animations
+│   │   ├── components.scss         # Global component styles
+│   │   └── themes/                 # Theme variations
+│   │       ├── light.scss          # Light theme colors, variables
+│   │       └── dark.scss           # Dark theme colors, variables
+│   ├── assets/                      # Static assets (bundled by Webpack)
+│   │   ├── images/                 # Component images, illustrations
+│   │   ├── icons/                  # SVG icons, icon sprites
+│   │   ├── fonts/                  # Custom fonts, font files
+│   │   └── videos/                 # Background videos, demos
+│   ├── contexts/                    # React Context providers
+│   │   ├── AuthContext.tsx         # Authentication context, user state
+│   │   ├── ThemeContext.tsx        # Theme switching, dark/light mode
+│   │   └── index.ts                # Context exports, provider setup
+│   ├── routes/                      # Application routing configuration
+│   │   ├── AppRoutes.tsx           # Main route definitions, lazy loading
+│   │   ├── ProtectedRoute.tsx      # Authentication guards, redirects
+│   │   ├── routes.ts               # Route constants, path definitions
+│   │   └── index.ts                # Routing exports
+│   ├── config/                      # Application configuration
+│   │   ├── env.ts                  # Environment variables, validation
+│   │   ├── api.ts                  # API endpoints, base URLs
+│   │   └── constants.ts            # App-wide constants, feature flags
+│   ├── lib/                         # Third-party library configurations
+│   │   ├── axios.ts                # HTTP client setup, interceptors
+│   │   ├── i18n.ts                 # Internationalization, translations
+│   │   └── analytics.ts            # Analytics tracking, events
+│   ├── __tests__/                   # Global test configuration
+│   │   ├── __mocks__/              # Global mocks, API responses
+│   │   ├── utils/                  # Test utilities, custom matchers
+│   │   └── setup.ts                # Test environment setup, globals
+│   ├── App.tsx                      # Root component, providers, routing
+│   ├── App.test.tsx                # App-level integration tests
+│   ├── index.tsx                   # React app entry point, DOM rendering
+│   └── index.css                   # Basic CSS imports, normalize
+├── docs/                            # Project documentation
+│   ├── API.md                      # API documentation, endpoints
+│   ├── DEPLOYMENT.md               # Deployment guides, CI/CD setup
+│   └── CONTRIBUTING.md             # Development guidelines, code style
+├── scripts/                         # Build and deployment automation
+│   ├── build.sh                    # Production build script
+│   ├── deploy.sh                   # Deployment automation
+│   └── test.sh                     # Test running, coverage reports
+├── .github/                         # GitHub-specific configuration
+│   ├── workflows/                  # GitHub Actions CI/CD
+│   │   ├── ci.yml                  # Continuous integration, testing
+│   │   └── cd.yml                  # Continuous deployment, releases
+│   └── PULL_REQUEST_TEMPLATE.md    # PR template, checklist
+├── .env.example                     # Environment variables template
+├── .env.local                       # Local development overrides
+├── .env.development                 # Development environment config
+├── .env.production                  # Production environment config
+├── .gitignore                       # Git ignored files, dependencies
+├── .eslintrc.json                   # ESLint rules, code quality
+├── .prettierrc                      # Code formatting configuration
+├── tsconfig.json                    # TypeScript compiler configuration
+├── package.json                     # Dependencies, scripts, metadata
+├── package-lock.json                # Dependency lock file, versions
+├── README.md                        # Project overview, setup instructions
+└── Dockerfile                       # Container configuration, deployment
+
+
+Other ways -> Feature sliced development
+
+Normal way : Layered architecture -> is a traditional software design pattern that organizes code into horizontal layers based on technical concerns rather than business features.
+Classic Layered Architecture:
+src/
+├── components/          # All UI components
+├── services/           # All API calls and business logic
+├── utils/              # All utility functions
+├── hooks/              # All custom hooks
+├── types/              # All TypeScript types
+├── store/              # All state management
+└── styles/             # All styling
+
+Feature-Sliced Design (also called Feature-Sliced Development or FSD) is a modern architectural methodology for organizing front-end code, especially in React applications. It aims to scale applications and keep the codebase clean, maintainable, and modular.
+Feature-First Organization: Instead of organizing code by technical concerns (components, utils, hooks), FSD groups code by business features and user-facing functionality.
+Hierarchical Structure: The architecture follows a strict hierarchy with clear dependency rules - higher layers can import from lower layers, but not vice versa.
+
+Layer Structure
+FSD defines several standard layers, from bottom to top:
+App Layer: Application initialization, global providers, routing configuration.
+Pages Layer: Route-level components that compose widgets and features into complete screens.
+Widgets Layer: Large composite UI blocks that combine multiple features - headers, sidebars, complex forms.
+Features Layer: User interactions and business features - authentication, search, shopping cart. These are complete user scenarios.
+Entities Layer: Business entities and their associated logic - user profiles, products, orders. These represent core domain concepts.
+Shared Layer: Contains reusable code that does not belong to any specific feature - UI components, utilities, API clients, constants, and configuration.
+
+Within each layer, code is organized into "slices" - self-contained modules that group related functionality:
+
+Each slice follows a consistent internal structure called "segments" like ui (components), model (state management), api (data fetching), and lib (utilities).
+
+src/
+├── app/
+├── pages/
+├── widgets/
+├── features/
+│   ├── authentication/
+│   │   ├── ui/
+│   │   ├── model/
+│   │   ├── api/
+│   │   └── index.ts
+│   └── search/
+├── entities/
+└── shared/
+
+
+for react -> use camelCase and PascalCase for file names
+for node -> use kebab-case

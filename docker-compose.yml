@@ -1,0 +1,80 @@
+services:
+  client:
+    image: client
+    build:
+      context: ./client/
+      dockerfile: Dockerfile.client
+    init: true
+    # environment: these didnt worked to auto refresh on file change
+    #   - CHOKIDAR_USEPOLLING=true
+    #   - VITE_DEBUG=true
+    volumes:
+      - type: bind
+        source: ./client/
+        target: /usr/src/app/
+      - type: volume
+        target: /usr/src/app/node_modules
+    networks:
+      - frontend
+    ports:
+      - 3000:3000
+
+  api-gateway:
+    build:
+      context: ./server/
+      dockerfile: /apps/api-gateway/Dockerfile
+    environment:
+    - CHOKIDAR_USEPOLLING=true
+    - CHOKIDAR_INTERVAL=100
+    volumes:
+      - type: bind
+        source: ./server/
+        target: /usr/src/app/
+      - type: volume
+        target: /usr/src/app/node_modules
+      # - type: volume
+      #   target: /usr/src/app/dist
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "8080:8080"
+
+  auth-service:
+    build:
+      context: ./server/
+      dockerfile: /apps/auth-service/Dockerfile
+    environment:
+    - CHOKIDAR_USEPOLLING=true
+    - CHOKIDAR_INTERVAL=100
+    volumes:
+      - type: bind
+        source: ./server/
+        target: /usr/src/app/
+      - type: volume
+        target: /usr/src/app/node_modules
+      # - type: volume
+      #   target: /usr/src/app/dist
+    networks:
+      - backend
+    ports:
+      - "6001:6001"
+
+# user-service:
+#   build:
+#     context: .
+#     dockerfile: ./server/apps/user-service/Dockerfile
+#   volumes:
+#     - type: bind
+#       source: ./server/
+#       target: /usr/src/app/
+#     - type: volume
+#       target: /usr/src/app/node_modules
+#     - type: volume
+#       target: /usr/src/app/dist
+#   ports:
+#     - "6002:6002"
+
+networks:
+  frontend:
+  backend:

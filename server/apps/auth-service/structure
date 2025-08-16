@@ -1,0 +1,60 @@
+auth-service/
+│
+├── src/
+│   ├── main.ts                # Entry point of the service
+│   ├── app.module.ts          # Root module
+│
+│   ├── config/                # Configuration (env vars, constants)
+│   │   ├── config.module.ts
+│   │   ├── config.service.ts
+│   │   └── env.validation.ts
+│
+│   ├── common/                # Shared helpers, guards, decorators, interceptors
+│   │   ├── decorators/
+│   │   │   └── user.decorator.ts
+│   │   ├── guards/
+│   │   │   └── jwt-auth.guard.ts
+│   │   ├── interceptors/
+│   │   ├── filters/
+│   │   └── utils/
+│
+│   ├── auth/                  # Authentication module
+│   │   ├── auth.module.ts
+│   │   ├── auth.controller.ts # Handles HTTP or gRPC requests
+│   │   ├── auth.service.ts    # Main business logic
+│   │   ├── auth.repository.ts # DB access for auth-specific entities
+│   │   ├── strategies/        # Passport strategies (JWT, Local, etc.)
+│   │   │   ├── jwt.strategy.ts
+│   │   │   └── local.strategy.ts
+│   │   ├── dto/               # Data Transfer Objects
+│   │   │   ├── login.dto.ts
+│   │   │   ├── register.dto.ts
+│   │   │   └── token-response.dto.ts
+│   │   └── interfaces/
+│   │       └── jwt-payload.interface.ts
+│
+│   ├── users/                 # User domain (can be its own microservice later)
+│   │   ├── users.module.ts
+│   │   ├── users.service.ts
+│   │   ├── users.repository.ts
+│   │   ├── entities/
+│   │   │   └── user.entity.ts
+│   │   └── dto/
+│   │       └── create-user.dto.ts
+│
+│   ├── infrastructure/        # Adapters: DB, messaging, external APIs
+│   │   ├── database/
+│   │   │   ├── database.module.ts
+│   │   │   └── migrations/
+│   │   ├── messaging/         # Kafka, RabbitMQ, NATS configs
+│   │   └── grpc/
+│   │       └── proto/         # .proto files for gRPC
+│
+│   └── tests/                 # Unit & e2e tests
+│       ├── auth/
+│       └── users/
+│
+├── package.json
+├── tsconfig.json
+├── .env
+└── README.md

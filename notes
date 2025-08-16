@@ -1,0 +1,8 @@
+zod ✔ -> Zod is a TypeScript-first schema declaration and validation library. It does both runtime and compile-time validation.
+yup -> Yup is a JavaScript schema builder for value parsing and validation. It does runtime validation.
+react-hook-form ✔ -> React Hook Form is a library for managing form state and validation in React applications. It leverages uncontrolled components and Refs for performance and triggers minimal re-renders, efficient
+formik -> Formik is a popular library for building forms in React, providing state management and validation capabilities. It uses controlled components and triggers re-render on each change.
+react-router-dom -> React Router DOM is a library for routing in React (web) applications, allowing navigation between different components and views. Provides everything from react-router, plus DOM-specific components.
+react-router -> React Router is a library for routing in React applications, enabling navigation between different components and views. It is platform-agnostic (can be used on web, native, etc.)and provides routing primitives and logic.
+
+RHF+ZOD tutorial -> https://youtu.be/JyeWoqWsQFo?si=LzVeqR_PUwk4fMU8
