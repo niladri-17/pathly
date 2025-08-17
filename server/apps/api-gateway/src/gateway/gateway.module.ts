@@ -3,6 +3,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AppConfigModule } from '../config/config.module';
 import { GatewayController } from './gateway.controller';
 import { GatewayService } from './gateway.service';
+import { JwtModule } from '@nestjs/jwt';
 // @Module({
 //   imports: [
 //     ClientsModule.registerAsync([
@@ -54,7 +55,7 @@ import { GatewayService } from './gateway.service';
 // 2nd way:
 
 @Module({
-  imports: [AppConfigModule],
+  imports: [AppConfigModule, JwtModule],
   controllers: [GatewayController],
   providers: [GatewayService],
 })

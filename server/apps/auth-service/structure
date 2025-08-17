@@ -14,7 +14,7 @@ auth-service/
 │   │   │   └── user.decorator.ts
 │   │   ├── guards/
 │   │   │   └── jwt-auth.guard.ts
-│   │   ├── interceptors/
+│   │   ├── interceptors/e
 │   │   ├── filters/
 │   │   └── utils/
 │

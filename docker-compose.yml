@@ -28,8 +28,8 @@ services:
     - CHOKIDAR_INTERVAL=100
     volumes:
       - type: bind
-        source: ./server/
-        target: /usr/src/app/
+        source: ./server/apps/api-gateway
+        target: /usr/src/app/apps/api-gateway
       - type: volume
         target: /usr/src/app/node_modules
       # - type: volume

@@ -6,6 +6,6 @@
   "author": "Niladri Basak",
   "type": "module",
   "scripts": {
-    "start:dev": "npx concurrently -n client,server -c green,blue \"npm run dev --prefix client\" \"npm run start:dev --prefix server\""
+    "start:dev": "npx concurrently -n client,server -c green,blue \"npm run dev --prefix client\" \"npm run start:dev-all --prefix server\""
   }
 }

@@ -29,7 +29,14 @@
 
 // 2nd way:
 
-import { Injectable, HttpException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  Scope,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import {
   ClientProxy,
   ClientProxyFactory,
@@ -37,23 +44,35 @@ import {
 } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
 import { AppConfigService } from '../config/config.service';
+import { JwtPayload } from '@app/types';
+import { JwtService } from '@nestjs/jwt';
+import { REQUEST } from '@nestjs/core';
+import type { Request } from 'express';
 
 interface MicroserviceConfig {
   host: string;
   port: number;
 }
 
-@Injectable()
+@Injectable({ scope: Scope.REQUEST }) // ⚠️ important
 export class GatewayService {
   private readonly serviceRegistry: Record<string, MicroserviceConfig> = {};
   private readonly clients: Record<string, ClientProxy> = {};
 
-  constructor(private readonly appConfig: AppConfigService) {
+  constructor(
+    private readonly appConfig: AppConfigService,
+    private readonly jwtService: JwtService,
+    @Inject(REQUEST) private readonly request: Request,
+  ) {
     // Initialize service registry dynamically
     this.serviceRegistry = {
       auth: {
         host: this.appConfig.AUTH_SERVICE.HOST!,
         port: this.appConfig.AUTH_SERVICE.PORT!,
+      },
+      users: {
+        host: this.appConfig.USER_SERVICE.HOST!,
+        port: this.appConfig.USER_SERVICE.PORT!,
       },
       // add more services here if needed
     };
@@ -77,20 +96,32 @@ export class GatewayService {
   async sendMessage<T = any>(
     service: string,
     pattern: string,
-    data: unknown,
+    data: Record<string, any>,
   ): Promise<T> {
+    // Step 0: Check if service exists
     const client = this.clients[service];
-    if (!client) throw new HttpException(`Service ${service} not found`, 404);
-    console.log(pattern);
-    try {
-      const observable = client.send<T>(pattern, data); // typed observable
-      return await lastValueFrom(observable); // returns Promise<T>
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        throw new HttpException(error.message, 500);
+    if (!client) throw new NotFoundException(`Service ${service} not found`);
+
+    // Step 1: Skip auth for auth service
+    if (service !== 'auth') {
+      const authHeader = this.request.headers['authorization'];
+      if (!authHeader?.startsWith('Bearer ')) {
+        throw new UnauthorizedException('Unauthorized');
       }
+
+      const token = authHeader.split(' ')[1];
+      const user = await this.jwtService.verifyAsync<JwtPayload>(token);
+
+      data = { ...data, user }; // attach user info
+    }
+
+    // Step 2: Send message
+    try {
+      const observable = client.send<T>(pattern, data);
+      return await lastValueFrom(observable);
+    } catch (error: unknown) {
       console.log(error);
-      throw new HttpException('Service error', 500);
+      throw new InternalServerErrorException();
     }
   }
 }
