@@ -1,0 +1,71 @@
+### Register a new user
+POST http://localhost:8080/auth/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john3@example.com",
+  "password": "supersecret123",
+  "rememberMe": true
+}
+
+
+### Login a existing user
+POST http://localhost:8080/auth/auth/login
+Content-Type: application/json
+
+{
+  "email": "john3@example.com",
+  "password": "supersecret123"
+}
+
+
+### Send otp
+POST http://localhost:8080/auth/auth/send-otp
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "supersecret123"
+}
+
+
+### Verify otp
+POST http://localhost:8080/auth/auth/verify-otp
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "supersecret123"
+}
+
+
+### Refresh token
+POST http://localhost:8080/auth/auth/refresh-token
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "supersecret123"
+}
+
+
+### Forgot password
+POST http://localhost:8080/auth/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "supersecret123"
+}
+
+
+### Reset password
+POST http://localhost:8080/auth/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "supersecret123"
+}

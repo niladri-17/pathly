@@ -25,25 +25,25 @@ export class GatewayController {
   async handleGetNoId(
     @Param('service') service: string,
     @Param('module') module: string,
-    @Param('action') action: string,
+    // @Param('action') action: string,
   ) {
-    return this.gatewayService.sendMessage(service, `${module}.${action}`, {});
+    return this.gatewayService.sendMessage(service, `${module}.findAll`, {});
   }
 
   @Get(':id')
   async handleGetWithId(
     @Param('service') service: string,
     @Param('module') module: string,
-    @Param('action') action: string,
+    // @Param('action') action: string,
     @Param('id') id: string,
   ) {
-    return this.gatewayService.sendMessage(service, `${module}.${action}`, {
+    return this.gatewayService.sendMessage(service, `${module}.findOne`, {
       id,
     });
   }
 
   // ---- POST ----
-  @Post()
+  @Post(':action')
   async handlePostNoId(
     @Param('service') service: string,
     @Param('module') module: string,
@@ -57,22 +57,22 @@ export class GatewayController {
     );
   }
 
-  @Post(':id')
-  async handlePostWithId(
-    @Param('service') service: string,
-    @Param('module') module: string,
-    @Param('action') action: string,
-    @Param('id') id: string,
-    @Body() body: any,
-  ) {
-    return this.gatewayService.sendMessage(service, `${module}.${action}`, {
-      id,
-      ...body,
-    });
-  }
+  // @Post(':action/:id')
+  // async handlePostWithId(
+  //   @Param('service') service: string,
+  //   @Param('module') module: string,
+  //   @Param('action') action: string,
+  //   @Param('id') id: string,
+  //   @Body() body: any,
+  // ) {
+  //   return this.gatewayService.sendMessage(service, `${module}.${action}`, {
+  //     id,
+  //     ...body,
+  //   });
+  // }
 
   // ---- PATCH ----
-  @Patch(':id')
+  @Patch(':action/:id')
   async handlePatch(
     @Param('service') service: string,
     @Param('module') module: string,
@@ -87,7 +87,7 @@ export class GatewayController {
   }
 
   // ---- DELETE ----
-  @Delete(':id')
+  @Delete(':action/:id')
   async handleDelete(
     @Param('service') service: string,
     @Param('module') module: string,

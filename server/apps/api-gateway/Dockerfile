@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
 
 # Copy all code (needed because libs/ are shared across services)
 COPY apps/api-gateway ./apps/api-gateway
-# COPY libs ./libs
+COPY libs ./libs
 
 # Expose the service’s port (example: 8080 for api-gateway)
 EXPOSE 8080

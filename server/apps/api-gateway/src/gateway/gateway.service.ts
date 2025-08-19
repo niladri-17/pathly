@@ -36,6 +36,8 @@ import {
   InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
+  Logger,
+  HttpException,
 } from '@nestjs/common';
 import {
   ClientProxy,
@@ -58,6 +60,7 @@ interface MicroserviceConfig {
 export class GatewayService {
   private readonly serviceRegistry: Record<string, MicroserviceConfig> = {};
   private readonly clients: Record<string, ClientProxy> = {};
+  private readonly logger: Logger = new Logger(GatewayService.name);
 
   constructor(
     private readonly appConfig: AppConfigService,
@@ -119,9 +122,31 @@ export class GatewayService {
     try {
       const observable = client.send<T>(pattern, data);
       return await lastValueFrom(observable);
-    } catch (error: unknown) {
-      console.log(error);
-      throw new InternalServerErrorException();
+    } catch (error: any) {
+      this.logger.error(error);
+
+      // 🟢 Case 1: No message handler found in remote service
+      if (
+        typeof error === 'string' &&
+        error.includes('no matching message handler')
+      ) {
+        throw new NotFoundException();
+      }
+
+      // 🟢 Case 2: RpcException with { statusCode }
+      if (error?.statusCode && typeof error.statusCode === 'number') {
+        throw new HttpException(error, error.statusCode);
+      }
+
+      // 🟢 Case 3: Nest default serialized error (status = "error")
+      if (error?.status === 'error') {
+        throw new InternalServerErrorException(
+          error?.message || 'Unknown error',
+        );
+      }
+
+      // 🟢 Fallback
+      throw new InternalServerErrorException('Unexpected error from service');
     }
   }
 }

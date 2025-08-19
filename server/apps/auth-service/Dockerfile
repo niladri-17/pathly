@@ -9,7 +9,7 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
     npm install
 
 COPY apps/auth-service ./apps/auth-service
-# COPY libs ./libs
+COPY libs ./libs
 
 # Expose the service’s port (example: 6001 for api-gateway)
 EXPOSE 6001
