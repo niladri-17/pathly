@@ -32,8 +32,8 @@ services:
         target: /usr/src/app/apps/api-gateway
       - type: volume
         target: /usr/src/app/node_modules
-      # - type: volume
-      #   target: /usr/src/app/dist
+    # - type: volume
+    #   target: /usr/src/app/dist
     networks:
       - frontend
       - backend
@@ -53,27 +53,82 @@ services:
         target: /usr/src/app/
       - type: volume
         target: /usr/src/app/node_modules
-      # - type: volume
-      #   target: /usr/src/app/dist
+    # - type: volume
+    #   target: /usr/src/app/dist
     networks:
       - backend
     ports:
       - "6001:6001"
 
-# user-service:
-#   build:
-#     context: .
-#     dockerfile: ./server/apps/user-service/Dockerfile
-#   volumes:
-#     - type: bind
-#       source: ./server/
-#       target: /usr/src/app/
-#     - type: volume
-#       target: /usr/src/app/node_modules
-#     - type: volume
-#       target: /usr/src/app/dist
-#   ports:
-#     - "6002:6002"
+  # user-service:
+  #   build:
+  #     context: .
+  #     dockerfile: ./server/apps/user-service/Dockerfile
+  #   volumes:
+  #     - type: bind
+  #       source: ./server/
+  #       target: /usr/src/app/
+  #     - type: volume
+  #       target: /usr/src/app/node_modules
+  #     - type: volume
+  #       target: /usr/src/app/dist
+  #   ports:
+  #     - "6002:6002"
+  pathly-redis:
+    image: redis:7-alpine
+    container_name: pathly-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend
+    restart: always
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  pathly-rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: pathly-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: Admin@1234
+      RABBITMQ_DEFAULT_VHOST: pathly
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - backend
+    restart: always
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis-insight:
+    image: redislabs/redisinsight:latest
+    container_name: pathly-redis-insight
+    ports:
+      - "5540:5540"
+    networks:
+      - backend
+    depends_on:
+      pathly-redis:
+        condition: service_healthy
+    restart: always
+
+# put pathly-redis:6379 as the redis url in redisinsight as inside localhost refers to the container itself
+
+volumes:
+  redis-data:
+  rabbitmq-data:
 
 networks:
   frontend:

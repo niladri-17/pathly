@@ -23,6 +23,51 @@
         "tsConfigPath": "apps/auth-service/tsconfig.app.json"
       }
     },
+    "brokers": {
+      "type": "library",
+      "root": "libs/brokers",
+      "entryFile": "index",
+      "sourceRoot": "libs/brokers/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/brokers/tsconfig.lib.json"
+      }
+    },
+    "common": {
+      "type": "library",
+      "root": "libs/common",
+      "entryFile": "index",
+      "sourceRoot": "libs/common/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/common/tsconfig.lib.json"
+      }
+    },
+    "mail": {
+      "type": "library",
+      "root": "libs/mail",
+      "entryFile": "index",
+      "sourceRoot": "libs/mail/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/mail/tsconfig.lib.json"
+      }
+    },
+    "notification-service": {
+      "type": "application",
+      "root": "apps/notification-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/notification-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/notification-service/tsconfig.app.json"
+      }
+    },
+    "redis": {
+      "type": "library",
+      "root": "libs/redis",
+      "entryFile": "index",
+      "sourceRoot": "libs/redis/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/redis/tsconfig.lib.json"
+      }
+    },
     "services-service": {
       "type": "application",
       "root": "apps/services-service",

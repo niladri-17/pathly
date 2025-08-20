@@ -3,10 +3,10 @@ POST http://localhost:8080/auth/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "John",
-  "lastName": "Doe",
-  "email": "john3@example.com",
-  "password": "supersecret123",
+  "firstName": "Niladri",
+  "lastName": "Basak",
+  "email": "niladri.basak.007@gmail.com",
+  "password": "Test21234",
   "rememberMe": true
 }
 
@@ -26,8 +26,7 @@ POST http://localhost:8080/auth/auth/send-otp
 Content-Type: application/json
 
 {
-  "email": "john@example.com",
-  "password": "supersecret123"
+  "email": "niladri.basak.007@gmail.com"
 }
 
 
@@ -36,8 +35,7 @@ POST http://localhost:8080/auth/auth/verify-otp
 Content-Type: application/json
 
 {
-  "email": "john@example.com",
-  "password": "supersecret123"
+  "email": "john@example.com"
 }
 
 

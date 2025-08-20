@@ -2,10 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { AppConfigService } from './config/config.service';
 import { Logger, RequestMethod } from '@nestjs/common';
-import { RequestAuthGuard } from './common/guards/request-auth.guard';
+// import { RequestAuthGuard } from './common/guards/request-auth.guard';
 
 async function bootstrap() {
-  const logger = new Logger();
+  const logger = new Logger('API-GATEWAY');
   const app = await NestFactory.create(AppModule);
   app.enableCors();
   // app.useGlobalGuards(app.get(RequestAuthGuard));

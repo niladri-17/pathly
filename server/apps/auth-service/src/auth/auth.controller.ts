@@ -3,6 +3,7 @@ import { MessagePattern } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dtos/register.dto';
 import { LoginDto } from './dtos/password-login.dto';
+import { SendOtpDto } from './dtos/send-otp.dto';
 
 @Controller()
 export class AuthController {
@@ -19,8 +20,8 @@ export class AuthController {
   }
 
   @MessagePattern('auth.send-otp')
-  sendOtp(data: any) {
-    return this.authService.sendOtp();
+  sendOtp(dto: SendOtpDto) {
+    return this.authService.sendOtp(dto);
   }
 
   @MessagePattern('auth.verify-otp')

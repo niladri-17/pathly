@@ -22,18 +22,14 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@app/types": [
-        "libs/types/src"
-      ],
-      "@app/types/*": [
-        "libs/types/src/*"
-      ],
-      "@app/users": [
-        "libs/users/src"
-      ],
-      "@app/users/*": [
-        "libs/users/src/*"
-      ]
+      "@app/brokers": ["libs/brokers/src"],
+      "@app/brokers/*": ["libs/brokers/src/*"],
+      "@app/common": ["libs/common/src"],
+      "@app/common/*": ["libs/common/src/*"],
+      "@app/notification": ["libs/notification/src"],
+      "@app/notification/*": ["libs/notification/src/*"],
+      "@app/redis": ["libs/redis/src"],
+      "@app/redis/*": ["libs/redis/src/*"]
     }
   },
   "watchOptions": {

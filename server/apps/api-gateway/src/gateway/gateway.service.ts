@@ -46,8 +46,8 @@ import {
 } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
 import { AppConfigService } from '../config/config.service';
-import { JwtPayload } from '@app/types';
-import { JwtService } from '@nestjs/jwt';
+import { JwtPayload } from '@app/common/types';
+import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 
@@ -99,7 +99,7 @@ export class GatewayService {
   async sendMessage<T = any>(
     service: string,
     pattern: string,
-    data: Record<string, any>,
+    payload: Record<string, any>,
   ): Promise<T> {
     // Step 0: Check if service exists
     const client = this.clients[service];
@@ -109,18 +109,33 @@ export class GatewayService {
     if (service !== 'auth') {
       const authHeader = this.request.headers['authorization'];
       if (!authHeader?.startsWith('Bearer ')) {
-        throw new UnauthorizedException('Unauthorized');
+        throw new UnauthorizedException('Missing or malformed token');
       }
 
       const token = authHeader.split(' ')[1];
-      const user = await this.jwtService.verifyAsync<JwtPayload>(token);
 
-      data = { ...data, user }; // attach user info
+      let user: JwtPayload;
+      try {
+        user = await this.jwtService.verifyAsync<JwtPayload>(token, {
+          secret: this.appConfig.ACCESS_TOKEN.SECRET!,
+        });
+      } catch (error) {
+        if (
+          error instanceof TokenExpiredError
+          //  ||
+          // error?.name === 'TokenExpiredError'
+        ) {
+          throw new UnauthorizedException('Token expired');
+        }
+        throw new UnauthorizedException('Invalid token');
+      }
+
+      payload = { payload, user };
     }
 
     // Step 2: Send message
     try {
-      const observable = client.send<T>(pattern, data);
+      const observable = client.send<T>(pattern, payload);
       return await lastValueFrom(observable);
     } catch (error: any) {
       this.logger.error(error);
@@ -134,7 +149,7 @@ export class GatewayService {
       }
 
       // 🟢 Case 2: RpcException with { statusCode }
-      if (error?.statusCode && typeof error.statusCode === 'number') {
+      if (error?.statusCode && typeof error?.statusCode === 'number') {
         throw new HttpException(error, error.statusCode);
       }
 
@@ -146,7 +161,9 @@ export class GatewayService {
       }
 
       // 🟢 Fallback
-      throw new InternalServerErrorException('Unexpected error from service');
+      throw new InternalServerErrorException(
+        'Unexpected error from the downstream service',
+      );
     }
   }
 }

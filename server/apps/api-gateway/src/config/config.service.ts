@@ -35,4 +35,19 @@ export class AppConfigService {
       PORT: this.configService.get<number>('SESSIONS_SERVICE_PORT'),
     };
   }
+
+  public get ACCESS_TOKEN() {
+    return {
+      SECRET: this.configService.get<string>('ACCESS_TOKEN_SECRET'),
+      TTL: this.configService.get<string>('ACCESS_TOKEN_TTL'),
+    };
+  }
+
+  public get REFRESH_TOKEN() {
+    return {
+      SECRET: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
+      DEFAULT_TTL: this.configService.get<string>('DEFAULT_TTL'),
+      REMEMBER_ME_TTL: this.configService.get<string>('REMEMBER_ME_TTL'),
+    };
+  }
 }

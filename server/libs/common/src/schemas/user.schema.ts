@@ -27,6 +27,9 @@ export class User {
   @Prop({ default: false })
   rememberMe: boolean;
 
+  @Prop({ default: null })
+  otp: string;
+
   @Prop({ type: String, default: null })
   refreshToken?: string;
 }

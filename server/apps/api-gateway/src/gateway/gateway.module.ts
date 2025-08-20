@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+// import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AppConfigModule } from '../config/config.module';
 import { GatewayController } from './gateway.controller';
 import { GatewayService } from './gateway.service';
@@ -55,7 +55,7 @@ import { JwtModule } from '@nestjs/jwt';
 // 2nd way:
 
 @Module({
-  imports: [AppConfigModule, JwtModule],
+  imports: [AppConfigModule, JwtModule.register({})],
   controllers: [GatewayController],
   providers: [GatewayService],
 })

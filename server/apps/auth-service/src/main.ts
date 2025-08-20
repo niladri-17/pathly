@@ -7,9 +7,8 @@ import {
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 
-const logger = new Logger();
-
 async function bootstrap() {
+  const logger = new Logger('AUTH-SERVICE');
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     AppModule,
     {
@@ -18,21 +17,11 @@ async function bootstrap() {
     },
   );
 
-  // enable validation globally
-  // app.useGlobalPipes(
-  //   new ValidationPipe({
-  //     whitelist: true, // strips properties not in the DTO
-  //     forbidNonWhitelisted: true, // throws error if extra properties are passed
-  //     transform: true, // transforms payloads to DTO instances
-  //   }),
-  // );
-
-  // In your main.ts, customize the ValidationPipe exception factory
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
+      whitelist: true, // strips properties not in the DTO
+      forbidNonWhitelisted: true, // throws error if extra properties are passed
+      transform: true, // transforms payloads to DTO instances
       exceptionFactory: (errors) => {
         return new RpcException({
           statusCode: 400,
@@ -47,6 +36,8 @@ async function bootstrap() {
   );
 
   await app.listen();
-  logger.log('Auth Service running on TCP port 6001');
+  logger.log(
+    `Auth Service running on TCP port ${process.env.AUTH_SERVICE_PORT}`,
+  );
 }
 bootstrap();
