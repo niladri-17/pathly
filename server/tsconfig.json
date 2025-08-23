@@ -26,8 +26,8 @@
       "@app/brokers/*": ["libs/brokers/src/*"],
       "@app/common": ["libs/common/src"],
       "@app/common/*": ["libs/common/src/*"],
-      "@app/notification": ["libs/notification/src"],
-      "@app/notification/*": ["libs/notification/src/*"],
+      "@app/channels": ["libs/channels/src"],
+      "@app/channels/*": ["libs/channels/src/*"],
       "@app/redis": ["libs/redis/src"],
       "@app/redis/*": ["libs/redis/src/*"]
     }

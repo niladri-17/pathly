@@ -1,0 +1,14 @@
+src/mail/
+│
+├── adapters/                     # All implementations of the Mailer interface
+│   ├── nodemailer-mailer.service.ts
+│   ├── sendgrid-mailer.service.ts
+│   └── ses-mailer.service.ts      # (future AWS SES, for example)
+│
+├── interfaces/
+│   └── mailer.interface.ts        # Defines the Mailer contract
+│
+├── mail.constants.ts              # Injection tokens (MAILER, MAIL_OPTIONS, etc.)
+├── mail.providers.ts              # Provider definitions (factory to choose adapter)
+├── mail.service.ts                # Stable service, injected everywhere in app
+├── mail.module.ts                 # Module definition (imports providers)

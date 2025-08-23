@@ -26,7 +26,8 @@ POST http://localhost:8080/auth/auth/send-otp
 Content-Type: application/json
 
 {
-  "email": "niladri.basak.007@gmail.com"
+  "email": "niladri.basak.007@gmail.com",
+  "channel": "email"
 }
 
 

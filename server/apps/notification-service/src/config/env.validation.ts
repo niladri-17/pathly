@@ -11,15 +11,21 @@ const envSchema = z.object({
   // Redis
   REDIS_HOST: z.string().min(1),
   REDIS_PORT: z.coerce.number().int().min(1).max(65535),
-  REDIS_PASSWORD: z.string().optional(), // Keep optional if you want
+  REDIS_PASSWORD: z.string(), // Keep optional if you want
 
   // RabbitMQ
-  RABBIT_MQ_URI: z.string().min(1),
+  RABBITMQ_HOST: z.string().min(1),
+  RABBITMQ_PORT: z.coerce.number().min(1).max(65535),
+  RABBITMQ_USERNAME: z.string().min(1),
+  RABBITMQ_PASSWORD: z.string().min(1),
+  RABBITMQ_VHOST: z.string().min(1),
 
   // OTP
   OTP_LENGTH: z.coerce.number().int().min(4).max(8),
   OTP_TTL: z.coerce.number().int().min(60),
   OTP_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(10),
+
+  JWT_SECRET: z.string().min(1),
 
   // Access Token
   ACCESS_TOKEN_SECRET: z.string().min(1),

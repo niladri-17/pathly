@@ -3,12 +3,15 @@ import { AuthModule } from './auth/auth.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { Connection } from 'mongoose';
-
+import config from './config';
+import { validate } from './config/env.validation';
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: `${process.cwd()}/apps/auth-service/.env`,
+      load: [config],
+      validate,
     }),
     MongooseModule.forRoot(process.env.MONGO_URI!, {
       onConnectionCreate: (connection: Connection) => {
@@ -16,7 +19,7 @@ import { Connection } from 'mongoose';
 
         connection.on('connected', () => {
           logger.log(
-            `✅ Database ${connection?.db?.databaseName} connected successfully`,
+            `🍃  Database ${connection?.db?.databaseName} connected successfully`,
           );
           // logger.log(`Host: ${connection.host}:${connection.port}`);
         });
@@ -26,7 +29,7 @@ import { Connection } from 'mongoose';
         });
 
         connection.on('disconnected', () => {
-          logger.warn('⚠️ MongoDB disconnected');
+          logger.warn('⚠️  MongoDB disconnected');
         });
 
         return connection;

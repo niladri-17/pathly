@@ -7,3 +7,9 @@ react-router -> React Router is a library for routing in React applications, ena
 claa transformer + class validator -> Provides runtime validation
 
 RHF+ZOD tutorial -> https://youtu.be/JyeWoqWsQFo?si=LzVeqR_PUwk4fMU8
+
+
+features->
+webrtc based 1-1 video calling
+webinar -> zoom like video calling
+realtime chat

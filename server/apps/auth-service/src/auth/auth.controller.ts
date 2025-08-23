@@ -11,6 +11,7 @@ export class AuthController {
 
   @MessagePattern('auth.register')
   async register(dto: RegisterDto) {
+    console.log(dto);
     return await this.authService.register(dto);
   }
 

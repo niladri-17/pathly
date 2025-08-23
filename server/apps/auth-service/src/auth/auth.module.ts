@@ -3,20 +3,24 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { MailModule } from '@app/notification';
+import { MailModule } from 'libs/channels/src';
 import { UserRepository } from '@app/common/repositories';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '@app/common/schemas';
+// import { RabbitMQModule } from '@app/brokers/rabbit-mq';
+// import { QUEUES } from '@app/common/constants';
+import { RedisModule } from '@app/redis';
 import { RabbitMQModule } from '@app/brokers/rabbit-mq';
-import { QUEUES } from '@app/common/constants';
 
 @Module({
   imports: [
     ConfigModule,
-    JwtModule.register({}),
+    JwtModule.register({}), // for working with multiple tokens we cant register the secret and expiry  here then it will be used for both access and refresh token. we will override and pass those during token generation
     MailModule,
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    RabbitMQModule.register(QUEUES.OTP),
+    // RabbitMQModule.register(QUEUES.OTP),
+    RedisModule,
+    RabbitMQModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, UserRepository],

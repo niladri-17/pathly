@@ -41,13 +41,13 @@
         "tsConfigPath": "libs/common/tsconfig.lib.json"
       }
     },
-    "mail": {
+    "channels": {
       "type": "library",
-      "root": "libs/mail",
+      "root": "libs/channels",
       "entryFile": "index",
-      "sourceRoot": "libs/mail/src",
+      "sourceRoot": "libs/channels/src",
       "compilerOptions": {
-        "tsConfigPath": "libs/mail/tsconfig.lib.json"
+        "tsConfigPath": "libs/channels/tsconfig.lib.json"
       }
     },
     "notification-service": {
@@ -77,15 +77,6 @@
         "tsConfigPath": "apps/services-service/tsconfig.app.json"
       }
     },
-    "types": {
-      "type": "library",
-      "root": "libs/types",
-      "entryFile": "index",
-      "sourceRoot": "libs/types/src",
-      "compilerOptions": {
-        "tsConfigPath": "libs/types/tsconfig.lib.json"
-      }
-    },
     "user-service": {
       "type": "application",
       "root": "apps/user-service",
@@ -93,15 +84,6 @@
       "sourceRoot": "apps/user-service/src",
       "compilerOptions": {
         "tsConfigPath": "apps/user-service/tsconfig.app.json"
-      }
-    },
-    "users": {
-      "type": "library",
-      "root": "libs/users",
-      "entryFile": "index",
-      "sourceRoot": "libs/users/src",
-      "compilerOptions": {
-        "tsConfigPath": "libs/users/tsconfig.lib.json"
       }
     }
   },

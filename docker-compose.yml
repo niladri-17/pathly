@@ -5,7 +5,7 @@ services:
       context: ./client/
       dockerfile: Dockerfile.client
     init: true
-    # environment: these didnt worked to auto refresh on file change
+    # environment: these didnt worked to auto refresh on file change for the frontend
     #   - CHOKIDAR_USEPOLLING=true
     #   - VITE_DEBUG=true
     volumes:
@@ -74,6 +74,7 @@ services:
   #       target: /usr/src/app/dist
   #   ports:
   #     - "6002:6002"
+
   pathly-redis:
     image: redis:7-alpine
     container_name: pathly-redis
@@ -84,9 +85,9 @@ services:
     networks:
       - backend
     restart: always
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass "Admin@1234"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "Admin@1234", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -124,7 +125,7 @@ services:
         condition: service_healthy
     restart: always
 
-# put pathly-redis:6379 as the redis url in redisinsight as inside localhost refers to the container itself
+# put pathly-redis:6379 as the redis url in redisinsight as inside docker localhost refers to the container itself
 
 volumes:
   redis-data:
