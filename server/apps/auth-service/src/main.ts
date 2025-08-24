@@ -1,12 +1,13 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { HttpStatus, Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
-import {
-  AsyncMicroserviceOptions,
-  Transport,
-  RpcException,
-} from '@nestjs/microservices';
+import { AsyncMicroserviceOptions, Transport } from '@nestjs/microservices';
+import { AllRpcExceptionsFilter } from '@app/common/filters/all-rpc-exception.filter';
+import { ResponseTransformInterceptor } from '@app/common/interceptors/response.interceptor';
+// import { ApiErrorResponseDto } from '@app/common/dtos/api-error-response.dto';
+// import { ApiResponseService } from '@app/common/services/api-response.service';
+import { RpcApiErrorException } from '@app/common/exceptions/rpc-api-error.exception';
 
 async function bootstrap() {
   const logger = new Logger('AUTH-SERVICE');
@@ -34,14 +35,15 @@ async function bootstrap() {
         forbidNonWhitelisted: true,
         transform: true,
         exceptionFactory: (errors) => {
-          return new RpcException({
-            statusCode: 400,
-            error: 'Validation Error',
-            message: errors.map((err) => ({
+          throw new RpcApiErrorException(
+            HttpStatus.BAD_REQUEST,
+            'Validation failed',
+            // test: errors,
+            errors.map((err) => ({
               field: err.property,
-              errors: Object.values(err.constraints ?? {}),
+              message: Object.values(err.constraints ?? {})[0],
             })),
-          });
+          );
         },
       }),
     );
@@ -74,6 +76,13 @@ async function bootstrap() {
         );
       });
     });
+
+    // Global exception filter
+    // app.useGlobalFilters(new AllRpcExceptionsFilter());
+    //! If i handle all exceptions here with the exception filter then the error will be converted to a normal response and in the api-gateway it will be seen as just a normal returned response data which will be returned and will not go into the catch block. so even if the response has a statusCode 500 in client it can show 200, 201
+
+    // Global response transformer
+    // app.useGlobalInterceptors(new ResponseTransformInterceptor());
 
     await app.listen();
     logger.log(

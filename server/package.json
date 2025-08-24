@@ -12,7 +12,7 @@
     "start:dev:api-gateway": "npm run start:dev api-gateway",
     "start:dev:auth-service": "npm run start:dev auth-service",
     "start:dev:notification-service": "npm run start:dev notification-service",
-    "start:dev-all": "concurrently -c \"bgBlue.bold,bgGreen.bold\" \"npm:start:dev:*\"",
+    "start:dev-all": "concurrently -c \"bgBlue.bold,bgGreen.bold,bgYellow.bold\" \"npm:start:dev:*\"",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/apps/server/main",

@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dtos/register.dto';
 import { LoginDto } from './dtos/password-login.dto';
 import { SendOtpDto } from './dtos/send-otp.dto';
+import { VerifyOtpDto } from './dtos/verify-otp.dto';
 
 @Controller()
 export class AuthController {
@@ -26,8 +27,8 @@ export class AuthController {
   }
 
   @MessagePattern('auth.verify-otp')
-  verifyOtp(data: any) {
-    return this.authService.verifyOtp();
+  verifyOtp(dto: VerifyOtpDto) {
+    return this.authService.verifyOtp(dto);
   }
 
   @MessagePattern('auth.refresh-token')

@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { RegisterDto } from './dtos/register.dto';
 import { RpcException } from '@nestjs/microservices';
 import { UserRepository } from '@app/common/repositories';
@@ -12,9 +12,12 @@ import { createHmac, randomInt } from 'crypto';
 import Redis from 'ioredis';
 import { RedisService } from '@app/redis';
 import { RabbitMQService } from '@app/brokers/rabbit-mq';
+import { RpcApiErrorException } from '@app/common/exceptions/rpc-api-error.exception';
+import { VerifyOtpDto } from './dtos/verify-otp.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger('AuthService');
   constructor(
     private readonly userRepository: UserRepository,
     private readonly jwtService: JwtService,
@@ -31,10 +34,16 @@ export class AuthService {
     // Check if user already exists
     const existingUser = await this.userRepository.findByEmail(email);
     if (existingUser) {
-      throw new RpcException({
-        statusCode: HttpStatus.CONFLICT,
-        message: 'Email is already registered',
-      });
+      throw new RpcApiErrorException(
+        HttpStatus.CONFLICT,
+        'Email is already registered',
+        [
+          {
+            field: 'email',
+            message: 'Email is already registered',
+          },
+        ],
+      );
     }
 
     // password will be hashed in the pre-save hook
@@ -59,15 +68,19 @@ export class AuthService {
     const { password: _, ...safeUser } = newUser.toObject() as User;
 
     return {
-      ...safeUser,
-      accessToken,
-      refreshToken,
+      statusCode: HttpStatus.OK,
+      message: 'User logged in successfully',
+      data: {
+        ...safeUser,
+        accessToken,
+        refreshToken,
+      },
     };
   }
 
   private generateAccessAndRefreshToken(
     userId: string,
-    rememberMe: boolean,
+    rememberMe?: boolean,
   ): { accessToken: string; refreshToken: string } {
     const accessToken = this.jwtService.sign(
       { sub: userId },
@@ -96,22 +109,24 @@ export class AuthService {
     const { email, password, rememberMe } = dto;
     const user = await this.userRepository.findByEmail(email);
     if (!user || !(await user.comparePassword(password))) {
-      throw new RpcException({
-        statusCode: HttpStatus.UNAUTHORIZED,
-        message: 'Invalid email or password',
-      });
+      throw new RpcApiErrorException(
+        HttpStatus.UNAUTHORIZED,
+        'Invalid email or password',
+      );
     }
 
     const { accessToken, refreshToken } = this.generateAccessAndRefreshToken(
       user._id.toString(),
       rememberMe,
     );
+    // Prepare response
+    const { password: _, ...safeUser } = user.toObject() as User;
 
     return {
       statusCode: HttpStatus.OK,
       message: 'User logged in successfully',
       data: {
-        ...user.toObject(),
+        ...safeUser,
         accessToken,
         refreshToken,
       },
@@ -120,50 +135,113 @@ export class AuthService {
 
   async sendOtp(dto: SendOtpDto) {
     const { email } = dto;
+
+    // 1. Validate user exists
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
-      throw new RpcException({
-        statusCode: HttpStatus.NOT_FOUND,
-        message: 'User not found',
-      });
+      throw new RpcApiErrorException(HttpStatus.NOT_FOUND, 'User not found', [
+        {
+          field: 'email',
+          message: 'User not found',
+        },
+      ]);
     }
-    const otp = this.generateOtp(this.configService.get<number>('OTP_LENGTH')!);
+
+    const userId = user._id.toString();
+    const otpKey = `otp:email:login:${userId}`;
+
+    // 2. Check for existing OTP
+    const existingOtp = await this.redisService.get<string>(otpKey);
+    if (existingOtp) {
+      throw new RpcApiErrorException(
+        HttpStatus.TOO_MANY_REQUESTS,
+        'OTP already sent. Please wait before requesting a new one.',
+        [
+          {
+            field: 'otp',
+            message: 'Please wait before requesting a new OTP',
+          },
+        ],
+      );
+    }
+
+    // 3. Generate OTP and email content
+    const otpLength = this.configService.get<number>('OTP_LENGTH') || 6;
+    const otp = this.generateOtp(otpLength);
     const html = this.otpEmailTemplate(otp);
+    const otpExpiryTime = 180; // 3 minutes
 
     try {
-      // await this.mailService.sendEmail(email, 'Your Login OTP', html);
-      // await this.mailService.sendMail({
-      //   to: email,
-      //   subject: 'Your Login OTP',
-      //   html,
-      // });
-      await this.redisService.setOTP(user._id.toString(), otp, 180);
-      await this.rabbitMQService.publish('notification_exchange', 'email', {
-        to: email,
-        subject: 'Your Login OTP',
-        html,
-      });
-      // Instead of sending the email here we will send the email to the notification-serivice which will use the mail module from the notifications folder from the libs and will queue the notification to the rabbitMQ which will store the otp in the redis cache.
+      // 4. Store OTP and send email concurrently
+      await Promise.all([
+        this.redisService.set(otpKey, otp, otpExpiryTime),
+        this.rabbitMQService.publish('notification_exchange', 'email', {
+          to: email,
+          subject: 'Your Login OTP',
+          html,
+        }),
+      ]);
+
+      return {
+        success: true,
+        statusCode: HttpStatus.OK,
+        message: 'OTP sent successfully',
+        data: {
+          email,
+          expiresIn: otpExpiryTime,
+        },
+        timestamp: new Date().toISOString(),
+      };
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Internal Server Error';
-
-      throw new RpcException({
-        statusCode: 500,
-        message,
+      // 5. Clean up on failure
+      await this.redisService.del(otpKey).catch(() => {
+        // Ignore cleanup errors
       });
-    }
 
-    return {
-      message: 'OTP sent successfully',
-      data: {
-        otp,
-      },
-    };
+      this.logger.error('OTP sending failed:', { email, error });
+
+      throw new RpcApiErrorException(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to send OTP. Please try again.',
+      );
+    }
   }
 
-  verifyOtp() {
-    return 'verify otp';
+  async verifyOtp(dto: VerifyOtpDto) {
+    const { email, otp } = dto;
+    const user = await this.userRepository.findByEmail(email);
+    if (!user) {
+      throw new RpcApiErrorException(
+        HttpStatus.UNAUTHORIZED,
+        'Invalid email or password',
+      );
+    }
+
+    if (
+      otp !==
+      (await this.redisService.get<string>(
+        `otp:email:login:${user._id.toString()}`,
+      ))
+    )
+      throw new RpcApiErrorException(HttpStatus.UNAUTHORIZED, 'Invalid OTP', [
+        { field: 'otp', message: 'Invalid OTP' },
+      ]);
+
+    const { accessToken, refreshToken } = this.generateAccessAndRefreshToken(
+      user._id.toString(),
+    );
+
+    await this.redisService.del(`otp:email:login:${user._id.toString()}`);
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'OTP verified successfully',
+      data: {
+        ...(user.toObject() as User),
+        accessToken,
+        refreshToken,
+      },
+    };
   }
 
   refreshToken(data: any) {

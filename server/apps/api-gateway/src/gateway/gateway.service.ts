@@ -38,6 +38,7 @@ import {
   UnauthorizedException,
   Logger,
   HttpException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import {
   ClientProxy,
@@ -46,7 +47,7 @@ import {
 } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
 import { AppConfigService } from '../config/config.service';
-import { JwtPayload } from '@app/common/types';
+import { ApiSuccessResponse, JwtPayload } from '@app/common/types';
 import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
@@ -96,7 +97,7 @@ export class GatewayService {
   }
 
   // Generic type T for safe return typing
-  async sendMessage<T = any>(
+  async sendMessage<T = ApiSuccessResponse>(
     service: string,
     pattern: string,
     payload: Record<string, any>,
@@ -137,6 +138,8 @@ export class GatewayService {
     try {
       const observable = client.send<T>(pattern, payload);
       return await lastValueFrom(observable);
+
+      // return this.request.res.status(result.statusCode).json(result); // this will create circular reference since nestjs itselt will also try to send the response and here were tryto send the response through express
     } catch (error: any) {
       this.logger.error(error);
 
@@ -155,9 +158,26 @@ export class GatewayService {
 
       // 🟢 Case 3: Nest default serialized error (status = "error")
       if (error?.status === 'error') {
-        throw new InternalServerErrorException(
-          error?.message || 'Unknown error',
-        );
+        const httpError = {
+          success: false,
+          statusCode: 500,
+          message: error?.message || 'Unknown error',
+          errors: [],
+          timestamp: new Date().toISOString(),
+        };
+
+        throw new InternalServerErrorException(httpError);
+      }
+
+      // 🟢 Case 4: connection error
+      if (error?.code === 'ECONNREFUSED') {
+        throw new ServiceUnavailableException({
+          success: false,
+          message: 'Service unavailable',
+          errors: [],
+          statusCode: 503,
+          timestamp: new Date().toISOString(),
+        });
       }
 
       // 🟢 Fallback

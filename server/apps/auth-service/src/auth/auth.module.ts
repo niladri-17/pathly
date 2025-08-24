@@ -7,8 +7,6 @@ import { MailModule } from 'libs/channels/src';
 import { UserRepository } from '@app/common/repositories';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '@app/common/schemas';
-// import { RabbitMQModule } from '@app/brokers/rabbit-mq';
-// import { QUEUES } from '@app/common/constants';
 import { RedisModule } from '@app/redis';
 import { RabbitMQModule } from '@app/brokers/rabbit-mq';
 

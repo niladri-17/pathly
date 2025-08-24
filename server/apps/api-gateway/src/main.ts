@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { AppConfigService } from './config/config.service';
 import { Logger, RequestMethod } from '@nestjs/common';
+import { ApiSuccessResponseInterceptor } from './common/interceptors/api-success-response.interceptor';
+import { ApiSuccessResponse } from '@app/common/types';
 // import { RequestAuthGuard } from './common/guards/request-auth.guard';
 
 async function bootstrap() {
@@ -15,6 +17,10 @@ async function bootstrap() {
   }); // setting up global route prefix for every request routes
 
   const appConfig = app.get(AppConfigService);
+
+  app.useGlobalInterceptors(
+    new ApiSuccessResponseInterceptor<ApiSuccessResponse>(),
+  );
 
   await app.listen(appConfig.API_GATEWAY.PORT!);
   logger.log(
