@@ -3,10 +3,6 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { AsyncMicroserviceOptions, Transport } from '@nestjs/microservices';
-import { AllRpcExceptionsFilter } from '@app/common/filters/all-rpc-exception.filter';
-import { ResponseTransformInterceptor } from '@app/common/interceptors/response.interceptor';
-// import { ApiErrorResponseDto } from '@app/common/dtos/api-error-response.dto';
-// import { ApiResponseService } from '@app/common/services/api-response.service';
 import { RpcApiErrorException } from '@app/common/exceptions/rpc-api-error.exception';
 
 async function bootstrap() {

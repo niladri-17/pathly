@@ -1,10 +1,13 @@
-import { Body, Controller } from '@nestjs/common';
+import { Body, Controller, HttpStatus } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dtos/register.dto';
-import { LoginDto } from './dtos/password-login.dto';
+import { LoginDto } from './dtos/login.dto';
 import { SendOtpDto } from './dtos/send-otp.dto';
 import { VerifyOtpDto } from './dtos/verify-otp.dto';
+import { ApiSuccessResponse } from '@app/common/types';
+import { RegisterResponseDto } from './dtos/register-response.dto';
+import { apiSuccessResponse } from '@app/common/utils/api-success-response.util';
 
 @Controller()
 export class AuthController {
@@ -17,8 +20,13 @@ export class AuthController {
   }
 
   @MessagePattern('auth.login')
-  async login(dto: LoginDto) {
-    return await this.authService.login(dto);
+  async login(dto: LoginDto): Promise<ApiSuccessResponse<RegisterResponseDto>> {
+    const result = await this.authService.login(dto);
+    return apiSuccessResponse(
+      HttpStatus.OK,
+      'User logged in successfully',
+      result,
+    );
   }
 
   @MessagePattern('auth.send-otp')

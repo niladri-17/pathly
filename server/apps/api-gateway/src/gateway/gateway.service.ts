@@ -39,6 +39,7 @@ import {
   Logger,
   HttpException,
   ServiceUnavailableException,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ClientProxy,
@@ -97,7 +98,7 @@ export class GatewayService {
   }
 
   // Generic type T for safe return typing
-  async sendMessage<T = ApiSuccessResponse>(
+  async sendMessage<T extends ApiSuccessResponse = ApiSuccessResponse>(
     service: string,
     pattern: string,
     payload: Record<string, any>,
@@ -137,10 +138,23 @@ export class GatewayService {
     // Step 2: Send message
     try {
       const observable = client.send<T>(pattern, payload);
-      return await lastValueFrom(observable);
+      const result = await lastValueFrom<T>(observable);
+      if (result.cookies && Array.isArray(result.cookies)) {
+        result.cookies.forEach((cookie) => {
+          this.request.res?.cookie(
+            cookie.name,
+            cookie.value,
+            cookie.options || {},
+          );
+        });
+      }
 
-      // return this.request.res.status(result.statusCode).json(result); // this will create circular reference since nestjs itselt will also try to send the response and here were tryto send the response through express
-    } catch (error: any) {
+      return result;
+
+      // return this.request.res.status(result.statusCode).json(result);
+      // //! this will create circular reference since nestjs itselt will also try to send the response and here were tryto send the response through express
+      //* so we are modifiying the response in the global interceptor
+    } catch (error: unknown) {
       this.logger.error(error);
 
       // 🟢 Case 1: No message handler found in remote service
@@ -148,7 +162,14 @@ export class GatewayService {
         typeof error === 'string' &&
         error.includes('no matching message handler')
       ) {
-        throw new NotFoundException();
+        const httpError = {
+          success: false,
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Not Found',
+          errors: [],
+          timestamp: new Date().toISOString(),
+        };
+        throw new NotFoundException(httpError);
       }
 
       // 🟢 Case 2: RpcException with { statusCode }
@@ -169,7 +190,7 @@ export class GatewayService {
         throw new InternalServerErrorException(httpError);
       }
 
-      // 🟢 Case 4: connection error
+      // 🟢 Case 4: Connection error
       if (error?.code === 'ECONNREFUSED') {
         throw new ServiceUnavailableException({
           success: false,

@@ -5,8 +5,8 @@ Content-Type: application/json
 {
   "firstName": "Niladri",
   "lastName": "Basak",
-  "email": "niladri.basak.008@gmail.com",
-  "password": "Test21234",
+  "email": "niladri.basak.007@gmail.com",
+  "password": "Test@1234",
   "rememberMe": true
 }
 
@@ -16,8 +16,8 @@ POST http://localhost:8080/auth/auth/login
 Content-Type: application/json
 
 {
-  "email": "john3@example.com",
-  "password": "supersecret123"
+  "email": "niladri.basak.007@gmail.com",
+  "password": "Test@1234"
 }
 
 

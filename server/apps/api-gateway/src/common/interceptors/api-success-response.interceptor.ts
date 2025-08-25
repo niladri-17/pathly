@@ -18,6 +18,9 @@ export class ApiSuccessResponseInterceptor<T>
         // If data already has the format, use appropriate status code
         if (data && typeof data === 'object' && 'statusCode' in data) {
           response.status(data.statusCode);
+          if (data.cookies) {
+            delete data.cookies; // Correct key as string
+          }
           return data;
         }
 

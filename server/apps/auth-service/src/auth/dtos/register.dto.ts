@@ -2,27 +2,32 @@ import {
   IsBoolean,
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
+  MaxLength,
   MinLength,
 } from 'class-validator';
 
 export class RegisterDto {
   @IsString()
   @IsNotEmpty()
+  @MinLength(1)
   firstName: string;
 
   @IsString()
   @IsNotEmpty()
+  @MinLength(1)
   lastName: string;
 
   @IsEmail()
-  @IsNotEmpty()
   email: string;
 
+  @IsString()
   @MinLength(8)
-  @IsNotEmpty()
+  @MaxLength(128)
   password: string;
 
   @IsBoolean()
-  rememberMe: boolean = false;
+  @IsOptional()
+  rememberMe?: boolean = false;
 }

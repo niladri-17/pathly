@@ -1,9 +1,24 @@
+export interface ApiCookie {
+  name: string;
+  value: string;
+  options?: {
+    httpOnly?: boolean;
+    secure?: boolean;
+    maxAge?: number;
+    expires?: Date;
+    path?: string;
+    domain?: string;
+    sameSite?: 'strict' | 'lax' | 'none';
+  };
+}
+
 export interface ApiSuccessResponse<T = any> {
   success: true;
   statusCode: number;
   message: string;
-  data: T[] | null | Record<string, any>;
+  data: T | T[] | null | Record<string, any>;
   timestamp: string;
+  cookies?: ApiCookie[]; // Add optional cookies array here
 }
 
 // null -> single resourse endpoint with no data

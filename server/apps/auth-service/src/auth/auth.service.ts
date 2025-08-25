@@ -1,10 +1,9 @@
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { RegisterDto } from './dtos/register.dto';
-import { RpcException } from '@nestjs/microservices';
 import { UserRepository } from '@app/common/repositories';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { LoginDto } from './dtos/password-login.dto';
+import { LoginDto } from './dtos/login.dto';
 import { SendOtpDto } from './dtos/send-otp.dto';
 import { MailService } from 'libs/channels/src';
 import { User } from '@app/common/schemas';
@@ -14,6 +13,11 @@ import { RedisService } from '@app/redis';
 import { RabbitMQService } from '@app/brokers/rabbit-mq';
 import { RpcApiErrorException } from '@app/common/exceptions/rpc-api-error.exception';
 import { VerifyOtpDto } from './dtos/verify-otp.dto';
+import { apiSuccessResponse } from '@app/common/utils/api-success-response.util';
+import { ApiCookie, ApiSuccessResponse } from '@app/common/types';
+import ms from 'ms';
+import { plainToInstance } from 'class-transformer';
+import { RegisterResponseDto } from './dtos/register-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -28,7 +32,11 @@ export class AuthService {
     private readonly rabbitMQService: RabbitMQService,
   ) {}
 
-  async register(dto: RegisterDto) {
+  async register(
+    dto: RegisterDto,
+  ): Promise<
+    ApiSuccessResponse<Omit<User, 'password' | 'otp'> & { accessToken: string }>
+  > {
     const { email, password, firstName, lastName, rememberMe } = dto;
 
     // Check if user already exists
@@ -60,22 +68,44 @@ export class AuthService {
       rememberMe,
     );
 
-    // Optionally store the refresh token in the user document
+    // store the refresh token in the user document
     newUser.refreshToken = refreshToken;
     await newUser.save();
 
     // Prepare response
-    const { password: _, ...safeUser } = newUser.toObject() as User;
+    const {
+      password: _password,
+      otp: _otp,
+      ...safeUser
+    } = newUser.toObject() as User;
 
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'User logged in successfully',
-      data: {
+    const refreshTokenTtl = rememberMe
+      ? this.configService.get<string>('REFRESH_TOKEN.REMEMBER_ME_TTL')
+      : this.configService.get<string>('REFRESH_TOKEN.DEFAULT_TTL');
+
+    const cookies: ApiCookie[] = [
+      {
+        name: 'refreshToken',
+        value: refreshToken,
+        options: {
+          httpOnly: true,
+          secure: true,
+          maxAge: ms(refreshTokenTtl),
+          sameSite: 'lax',
+          path: '/',
+        },
+      },
+    ];
+
+    return apiSuccessResponse(
+      HttpStatus.CREATED,
+      'User registered successfully',
+      {
         ...safeUser,
         accessToken,
-        refreshToken,
       },
-    };
+      cookies,
+    );
   }
 
   private generateAccessAndRefreshToken(
@@ -105,7 +135,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto): Promise<RegisterResponseDto> {
     const { email, password, rememberMe } = dto;
     const user = await this.userRepository.findByEmail(email);
     if (!user || !(await user.comparePassword(password))) {
@@ -122,15 +152,17 @@ export class AuthService {
     // Prepare response
     const { password: _, ...safeUser } = user.toObject() as User;
 
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'User logged in successfully',
-      data: {
+    return plainToInstance(
+      RegisterResponseDto,
+      {
         ...safeUser,
         accessToken,
         refreshToken,
       },
-    };
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   async sendOtp(dto: SendOtpDto) {
@@ -182,16 +214,10 @@ export class AuthService {
         }),
       ]);
 
-      return {
-        success: true,
-        statusCode: HttpStatus.OK,
-        message: 'OTP sent successfully',
-        data: {
-          email,
-          expiresIn: otpExpiryTime,
-        },
-        timestamp: new Date().toISOString(),
-      };
+      return apiSuccessResponse(HttpStatus.OK, 'OTP sent successfully', {
+        expiresIn: otpExpiryTime,
+        resendIn: 60,
+      });
     } catch (error: unknown) {
       // 5. Clean up on failure
       await this.redisService.del(otpKey).catch(() => {
