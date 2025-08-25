@@ -14,10 +14,10 @@ import { RabbitMQService } from '@app/brokers/rabbit-mq';
 import { RpcApiErrorException } from '@app/common/exceptions/rpc-api-error.exception';
 import { VerifyOtpDto } from './dtos/verify-otp.dto';
 import { apiSuccessResponse } from '@app/common/utils/api-success-response.util';
-import { ApiCookie, ApiSuccessResponse } from '@app/common/types';
+import { ApiCookie } from '@app/common/types';
 import ms from 'ms';
 import { plainToInstance } from 'class-transformer';
-import { RegisterResponseDto } from './dtos/register-response.dto';
+import { AuthResponseDto } from './dtos/auth-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -32,11 +32,10 @@ export class AuthService {
     private readonly rabbitMQService: RabbitMQService,
   ) {}
 
-  async register(
-    dto: RegisterDto,
-  ): Promise<
-    ApiSuccessResponse<Omit<User, 'password' | 'otp'> & { accessToken: string }>
-  > {
+  async register(dto: RegisterDto): Promise<{
+    data: AuthResponseDto;
+    cookies: ApiCookie[];
+  }> {
     const { email, password, firstName, lastName, rememberMe } = dto;
 
     // Check if user already exists
@@ -73,11 +72,7 @@ export class AuthService {
     await newUser.save();
 
     // Prepare response
-    const {
-      password: _password,
-      otp: _otp,
-      ...safeUser
-    } = newUser.toObject() as User;
+    const user = newUser.toObject() as User;
 
     const refreshTokenTtl = rememberMe
       ? this.configService.get<string>('REFRESH_TOKEN.REMEMBER_ME_TTL')
@@ -97,15 +92,20 @@ export class AuthService {
       },
     ];
 
-    return apiSuccessResponse(
-      HttpStatus.CREATED,
-      'User registered successfully',
-      {
-        ...safeUser,
-        accessToken,
-      },
+    return {
+      data: plainToInstance(
+        AuthResponseDto,
+        {
+          ...user,
+          accessToken,
+          refreshToken,
+        },
+        {
+          excludeExtraneousValues: true,
+        },
+      ),
       cookies,
-    );
+    };
   }
 
   private generateAccessAndRefreshToken(
@@ -135,10 +135,13 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async login(dto: LoginDto): Promise<RegisterResponseDto> {
+  async login(
+    dto: LoginDto,
+  ): Promise<{ data: AuthResponseDto; cookies: ApiCookie[] }> {
     const { email, password, rememberMe } = dto;
-    const user = await this.userRepository.findByEmail(email);
-    if (!user || !(await user.comparePassword(password))) {
+    const userDoc = await this.userRepository.findByEmail(email);
+    console.log(userDoc);
+    if (!userDoc || !(await userDoc.comparePassword(password))) {
       throw new RpcApiErrorException(
         HttpStatus.UNAUTHORIZED,
         'Invalid email or password',
@@ -146,23 +149,44 @@ export class AuthService {
     }
 
     const { accessToken, refreshToken } = this.generateAccessAndRefreshToken(
-      user._id.toString(),
+      userDoc._id.toString(),
       rememberMe,
     );
     // Prepare response
-    const { password: _, ...safeUser } = user.toObject() as User;
+    const user = userDoc.toObject() as User;
 
-    return plainToInstance(
-      RegisterResponseDto,
+    const refreshTokenTtl = rememberMe
+      ? this.configService.get<string>('REFRESH_TOKEN.REMEMBER_ME_TTL')
+      : this.configService.get<string>('REFRESH_TOKEN.DEFAULT_TTL');
+
+    const cookies: ApiCookie[] = [
       {
-        ...safeUser,
-        accessToken,
-        refreshToken,
+        name: 'refreshToken',
+        value: refreshToken,
+        options: {
+          httpOnly: true,
+          secure: true,
+          maxAge: ms(refreshTokenTtl),
+          sameSite: 'lax',
+          path: '/',
+        },
       },
-      {
-        excludeExtraneousValues: true,
-      },
-    );
+    ];
+
+    return {
+      data: plainToInstance(
+        AuthResponseDto,
+        {
+          ...user,
+          accessToken,
+          refreshToken,
+        },
+        {
+          excludeExtraneousValues: true,
+        },
+      ),
+      cookies,
+    };
   }
 
   async sendOtp(dto: SendOtpDto) {
