@@ -4,12 +4,14 @@ import { AppConfigService } from './config/config.service';
 import { Logger, RequestMethod } from '@nestjs/common';
 import { ApiSuccessResponseInterceptor } from './common/interceptors/api-success-response.interceptor';
 import { ApiSuccessResponse } from '@app/common/types';
+import cookieParser from 'cookie-parser';
 // import { RequestAuthGuard } from './common/guards/request-auth.guard';
 
 async function bootstrap() {
   const logger = new Logger('API-GATEWAY');
   const app = await NestFactory.create(AppModule);
   app.enableCors();
+  app.use(cookieParser());
   // app.useGlobalGuards(app.get(RequestAuthGuard));
 
   app.setGlobalPrefix(':service/:module', {

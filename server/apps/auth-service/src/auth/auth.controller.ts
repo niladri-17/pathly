@@ -38,18 +38,34 @@ export class AuthController {
   }
 
   @MessagePattern('auth.send-otp')
-  sendOtp(dto: SendOtpDto) {
-    return this.authService.sendOtp(dto);
+  async sendOtp(dto: SendOtpDto) {
+    const result = await this.authService.sendOtp(dto);
+    return apiSuccessResponse(HttpStatus.OK, 'OTP sent successfully', result);
   }
 
   @MessagePattern('auth.verify-otp')
-  verifyOtp(dto: VerifyOtpDto) {
-    return this.authService.verifyOtp(dto);
+  async verifyOtp(
+    dto: VerifyOtpDto,
+  ): Promise<ApiSuccessResponse<AuthResponseDto>> {
+    const result = await this.authService.verifyOtp(dto);
+    return apiSuccessResponse(
+      HttpStatus.OK,
+      'User logged in successfully',
+      result.data,
+      result.cookies,
+    );
   }
 
   @MessagePattern('auth.refresh-token')
-  refreshToken(data: any) {
-    return this.authService.refreshToken(data);
+  async refreshToken(
+    data: any,
+  ): Promise<ApiSuccessResponse<{ accessToken: string }>> {
+    const result = await this.authService.refreshToken(data);
+    return apiSuccessResponse(
+      HttpStatus.CREATED,
+      'Token refreshed successfully',
+      result,
+    );
   }
 
   @MessagePattern('auth.forgot-password')

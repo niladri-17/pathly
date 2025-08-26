@@ -18,7 +18,13 @@ export interface NotificationQueuePayload {
 }
 
 // libs/shared/src/dto/notification.dto.ts
-import { IsString, IsEmail, IsOptional, IsEnum, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  IsObject,
+} from 'class-validator';
 
 export class SendEmailNotificationDto {
   @IsString()

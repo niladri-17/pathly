@@ -9,6 +9,10 @@ export class UserRepository {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {}
 
+  async findById(id: string): Promise<UserDocument | null> {
+    return await this.userModel.findById(id).exec();
+  }
+
   async create(user: Partial<User>): Promise<UserDocument> {
     return await new this.userModel(user).save();
   }

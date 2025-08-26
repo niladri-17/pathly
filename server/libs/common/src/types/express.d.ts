@@ -1,7 +1,10 @@
 import { JwtPayload } from 'jsonwebtoken';
 
-declare module 'express-serve-static-core' {
-  interface Request {
-    user?: string | JwtPayload;
+declare global {
+  namespace Express {
+    interface Request {
+      user?: Record<string, any> | JwtPayload;
+      cookies?: Record<string, string>;
+    }
   }
 }

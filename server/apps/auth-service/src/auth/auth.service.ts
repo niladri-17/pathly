@@ -5,7 +5,6 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dtos/login.dto';
 import { SendOtpDto } from './dtos/send-otp.dto';
-import { MailService } from 'libs/channels/src';
 import { User } from '@app/common/schemas';
 import { createHmac, randomInt } from 'crypto';
 import Redis from 'ioredis';
@@ -13,11 +12,11 @@ import { RedisService } from '@app/redis';
 import { RabbitMQService } from '@app/brokers/rabbit-mq';
 import { RpcApiErrorException } from '@app/common/exceptions/rpc-api-error.exception';
 import { VerifyOtpDto } from './dtos/verify-otp.dto';
-import { apiSuccessResponse } from '@app/common/utils/api-success-response.util';
 import { ApiCookie } from '@app/common/types';
 import ms from 'ms';
 import { plainToInstance } from 'class-transformer';
 import { AuthResponseDto } from './dtos/auth-response.dto';
+import { JwtPayload } from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService {
@@ -26,7 +25,6 @@ export class AuthService {
     private readonly userRepository: UserRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly mailService: MailService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     private readonly redisService: RedisService,
     private readonly rabbitMQService: RabbitMQService,
@@ -152,8 +150,10 @@ export class AuthService {
       userDoc._id.toString(),
       rememberMe,
     );
-    // Prepare response
-    const user = userDoc.toObject() as User;
+
+    // store the refresh token in the user document
+    userDoc.refreshToken = refreshToken;
+    await userDoc.save();
 
     const refreshTokenTtl = rememberMe
       ? this.configService.get<string>('REFRESH_TOKEN.REMEMBER_ME_TTL')
@@ -173,6 +173,8 @@ export class AuthService {
       },
     ];
 
+    const user = userDoc.toObject() as User;
+
     return {
       data: plainToInstance(
         AuthResponseDto,
@@ -189,7 +191,9 @@ export class AuthService {
     };
   }
 
-  async sendOtp(dto: SendOtpDto) {
+  async sendOtp(
+    dto: SendOtpDto,
+  ): Promise<{ expiresIn: number; resendIn: number }> {
     const { email } = dto;
 
     // 1. Validate user exists
@@ -238,10 +242,10 @@ export class AuthService {
         }),
       ]);
 
-      return apiSuccessResponse(HttpStatus.OK, 'OTP sent successfully', {
+      return {
         expiresIn: otpExpiryTime,
         resendIn: 60,
-      });
+      };
     } catch (error: unknown) {
       // 5. Clean up on failure
       await this.redisService.del(otpKey).catch(() => {
@@ -257,10 +261,12 @@ export class AuthService {
     }
   }
 
-  async verifyOtp(dto: VerifyOtpDto) {
+  async verifyOtp(
+    dto: VerifyOtpDto,
+  ): Promise<{ data: AuthResponseDto; cookies: ApiCookie[] }> {
     const { email, otp } = dto;
-    const user = await this.userRepository.findByEmail(email);
-    if (!user) {
+    const userDoc = await this.userRepository.findByEmail(email);
+    if (!userDoc) {
       throw new RpcApiErrorException(
         HttpStatus.UNAUTHORIZED,
         'Invalid email or password',
@@ -270,7 +276,7 @@ export class AuthService {
     if (
       otp !==
       (await this.redisService.get<string>(
-        `otp:email:login:${user._id.toString()}`,
+        `otp:email:login:${userDoc._id.toString()}`,
       ))
     )
       throw new RpcApiErrorException(HttpStatus.UNAUTHORIZED, 'Invalid OTP', [
@@ -278,24 +284,94 @@ export class AuthService {
       ]);
 
     const { accessToken, refreshToken } = this.generateAccessAndRefreshToken(
-      user._id.toString(),
+      userDoc._id.toString(),
     );
 
-    await this.redisService.del(`otp:email:login:${user._id.toString()}`);
+    await this.redisService.del(`otp:email:login:${userDoc._id.toString()}`);
+
+    const refreshTokenTtl = this.configService.get<string>(
+      'REFRESH_TOKEN.DEFAULT_TTL',
+    );
+    // rememberMe
+    // ? this.configService.get<string>('REFRESH_TOKEN.REMEMBER_ME_TTL')
+    // :
+
+    const cookies: ApiCookie[] = [
+      {
+        name: 'refreshToken',
+        value: refreshToken,
+        options: {
+          httpOnly: true,
+          secure: true,
+          maxAge: ms(refreshTokenTtl),
+          sameSite: 'lax',
+          path: '/',
+        },
+      },
+    ];
+
+    const user = userDoc.toObject() as User;
 
     return {
-      statusCode: HttpStatus.OK,
-      message: 'OTP verified successfully',
-      data: {
-        ...(user.toObject() as User),
-        accessToken,
-        refreshToken,
-      },
+      data: plainToInstance(
+        AuthResponseDto,
+        {
+          ...user,
+          accessToken,
+        },
+        {
+          excludeExtraneousValues: true,
+        },
+      ),
+      cookies,
     };
   }
 
-  refreshToken(data: any) {
-    return 'refresh token';
+  async refreshToken(data: {
+    cookies: { refreshToken: string };
+  }): Promise<{ accessToken: string }> {
+    const refreshToken = data?.cookies?.refreshToken;
+    if (!refreshToken) {
+      throw new RpcApiErrorException(HttpStatus.UNAUTHORIZED, 'Missing token');
+    }
+
+    let user: JwtPayload;
+
+    try {
+      user = await this.jwtService.verifyAsync(refreshToken, {
+        secret: this.configService.get<string>('REFRESH_TOKEN.SECRET'),
+      });
+    } catch (error) {
+      console.error('Failed to verify refresh token:', error);
+      throw new RpcApiErrorException(
+        HttpStatus.UNAUTHORIZED,
+        'Invalid refresh token',
+      );
+    }
+
+    // // Validate user exists
+    const userDoc = await this.userRepository.findById(user.sub as string);
+    if (!userDoc) {
+      console.error('User not found');
+      throw new RpcApiErrorException(
+        HttpStatus.UNAUTHORIZED,
+        'Invalid refresh token',
+      );
+    }
+
+    if (userDoc.refreshToken !== refreshToken) {
+      console.error('Refresh token does not match');
+      throw new RpcApiErrorException(
+        HttpStatus.UNAUTHORIZED,
+        'Invalid refresh token',
+      );
+    }
+
+    const { accessToken } = this.generateAccessAndRefreshToken(
+      userDoc._id.toString(),
+    );
+
+    return { accessToken };
   }
 
   forgotpassword(data: any) {

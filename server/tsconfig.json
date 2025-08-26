@@ -21,6 +21,8 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
+    "typeRoots": ["./libs/common/src/types", "./node_modules/@types"],
+    "types": ["node", "express", "cookie-parser"],
     "paths": {
       "@app/brokers": ["libs/brokers/src"],
       "@app/brokers/*": ["libs/brokers/src/*"],

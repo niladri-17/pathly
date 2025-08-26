@@ -1,0 +1,646 @@
+import React, { useState, useRef, useEffect } from "react";
+import { Stage, Layer, Rect, Circle, Line, Image as KonvaImage, Transformer } from "react-konva";
+
+// Toolbox Component - Removed arrow, added triangle
+const Toolbox = ({ selectedTool, onToolChange }: { selectedTool: string; onToolChange: (tool: string) => void }) => {
+  const tools = [
+    { id: "select", label: "Select", icon: "✋" },
+    { id: "rect", label: "Rectangle", icon: "▢" },
+    { id: "circle", label: "Circle", icon: "○" },
+    { id: "triangle", label: "Triangle", icon: "△" },
+    { id: "polygon", label: "Polygon", icon: "⬟" },
+  ];
+
+  return (
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      background: "#f5f5f5",
+      border: "1px solid #ddd",
+      borderRadius: "8px",
+      padding: "10px",
+      marginBottom: "10px",
+      width: "80px"
+    }}>
+      <h4 style={{ margin: "0 0 10px 0", fontSize: "12px", textAlign: "center" }}>Tools</h4>
+      {tools.map((tool) => (
+        <button
+          key={tool.id}
+          onClick={() => onToolChange(tool.id)}
+          style={{
+            background: selectedTool === tool.id ? "#007bff" : "#fff",
+            color: selectedTool === tool.id ? "#fff" : "#000",
+            border: "1px solid #ddd",
+            borderRadius: "4px",
+            padding: "8px",
+            marginBottom: "5px",
+            cursor: "pointer",
+            fontSize: "16px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            minHeight: "50px"
+          }}
+          title={tool.label}
+        >
+          <span style={{ fontSize: "18px", marginBottom: "2px" }}>{tool.icon}</span>
+          <span style={{ fontSize: "8px" }}>{tool.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
+// Enhanced Shape Components
+const DraggableRect = ({ shape, isSelected, onSelect, onChange }: any) => {
+  const shapeRef = useRef<any>();
+  const trRef = useRef<any>();
+
+  useEffect(() => {
+    if (isSelected) {
+      trRef.current.nodes([shapeRef.current]);
+      trRef.current.getLayer().batchDraw();
+    }
+  }, [isSelected]);
+
+  return (
+    <>
+      <Rect
+        ref={shapeRef}
+        x={shape.x}
+        y={shape.y}
+        width={shape.w}
+        height={shape.h}
+        draggable
+        onClick={onSelect}
+        onTap={onSelect}
+        onDragEnd={(e) => {
+          onChange({
+            ...shape,
+            x: e.target.x(),
+            y: e.target.y(),
+          });
+        }}
+        onTransformEnd={(e) => {
+          const node = shapeRef.current;
+          const scaleX = node.scaleX();
+          const scaleY = node.scaleY();
+
+          onChange({
+            ...shape,
+            x: node.x(),
+            y: node.y(),
+            w: Math.max(5, node.width() * scaleX),
+            h: Math.max(5, node.height() * scaleY),
+          });
+
+          node.scaleX(1);
+          node.scaleY(1);
+        }}
+        stroke={isSelected ? "blue" : "green"}
+        strokeWidth={isSelected ? 3 : 2}
+        fill="rgba(0, 255, 0, 0.1)"
+      />
+      {isSelected && (
+        <Transformer
+          ref={trRef}
+          boundBoxFunc={(oldBox, newBox) => {
+            if (newBox.width < 5 || newBox.height < 5) {
+              return oldBox;
+            }
+            return newBox;
+          }}
+        />
+      )}
+    </>
+  );
+};
+
+const DraggableCircle = ({ shape, isSelected, onSelect, onChange }: any) => {
+  const shapeRef = useRef<any>();
+  const trRef = useRef<any>();
+
+  useEffect(() => {
+    if (isSelected) {
+      trRef.current.nodes([shapeRef.current]);
+      trRef.current.getLayer().batchDraw();
+    }
+  }, [isSelected]);
+
+  return (
+    <>
+      <Circle
+        ref={shapeRef}
+        x={shape.x}
+        y={shape.y}
+        radius={shape.radius}
+        draggable
+        onClick={onSelect}
+        onTap={onSelect}
+        onDragEnd={(e) => {
+          onChange({
+            ...shape,
+            x: e.target.x(),
+            y: e.target.y(),
+          });
+        }}
+        onTransformEnd={(e) => {
+          const node = shapeRef.current;
+          const scaleX = node.scaleX();
+
+          onChange({
+            ...shape,
+            x: node.x(),
+            y: node.y(),
+            radius: Math.max(5, shape.radius * scaleX),
+          });
+
+          node.scaleX(1);
+          node.scaleY(1);
+        }}
+        stroke={isSelected ? "blue" : "green"}
+        strokeWidth={isSelected ? 3 : 2}
+        fill="rgba(0, 255, 0, 0.1)"
+      />
+      {isSelected && (
+        <Transformer
+          ref={trRef}
+          boundBoxFunc={(oldBox, newBox) => {
+            if (newBox.width < 10 || newBox.height < 10) {
+              return oldBox;
+            }
+            return newBox;
+          }}
+        />
+      )}
+    </>
+  );
+};
+
+const DraggableTriangle = ({ shape, isSelected, onSelect, onChange }: any) => {
+  const shapeRef = useRef<any>();
+  const trRef = useRef<any>();
+
+  useEffect(() => {
+    if (isSelected) {
+      trRef.current.nodes([shapeRef.current]);
+      trRef.current.getLayer().batchDraw();
+    }
+  }, [isSelected]);
+
+  return (
+    <>
+      <Line
+        ref={shapeRef}
+        points={shape.points}
+        closed={true}
+        draggable
+        onClick={onSelect}
+        onTap={onSelect}
+        onDragEnd={(e) => {
+          onChange({
+            ...shape,
+            x: e.target.x(),
+            y: e.target.y(),
+          });
+        }}
+        onTransformEnd={(e) => {
+          const node = shapeRef.current;
+          const scaleX = node.scaleX();
+          const scaleY = node.scaleY();
+
+          // Scale the points
+          const newPoints = shape.points.map((point: number, index: number) =>
+            index % 2 === 0 ? point * scaleX : point * scaleY
+          );
+
+          onChange({
+            ...shape,
+            x: node.x(),
+            y: node.y(),
+            points: newPoints,
+          });
+
+          node.scaleX(1);
+          node.scaleY(1);
+        }}
+        stroke={isSelected ? "blue" : "green"}
+        strokeWidth={isSelected ? 3 : 2}
+        fill="rgba(0, 255, 0, 0.1)"
+      />
+      {isSelected && (
+        <Transformer
+          ref={trRef}
+          boundBoxFunc={(oldBox, newBox) => {
+            if (newBox.width < 10 || newBox.height < 10) {
+              return oldBox;
+            }
+            return newBox;
+          }}
+        />
+      )}
+    </>
+  );
+};
+
+const DraggablePolygon = ({ shape, isSelected, onSelect, onChange }: any) => {
+  const shapeRef = useRef<any>();
+  const trRef = useRef<any>();
+
+  useEffect(() => {
+    if (isSelected) {
+      trRef.current.nodes([shapeRef.current]);
+      trRef.current.getLayer().batchDraw();
+    }
+  }, [isSelected]);
+
+  return (
+    <>
+      <Line
+        ref={shapeRef}
+        points={shape.points}
+        closed={true}
+        draggable
+        onClick={onSelect}
+        onTap={onSelect}
+        onDragEnd={(e) => {
+          onChange({
+            ...shape,
+            x: e.target.x(),
+            y: e.target.y(),
+          });
+        }}
+        onTransformEnd={(e) => {
+          const node = shapeRef.current;
+          const scaleX = node.scaleX();
+          const scaleY = node.scaleY();
+
+          const newPoints = shape.points.map((point: number, index: number) =>
+            index % 2 === 0 ? point * scaleX : point * scaleY
+          );
+
+          onChange({
+            ...shape,
+            x: node.x(),
+            y: node.y(),
+            points: newPoints,
+          });
+
+          node.scaleX(1);
+          node.scaleY(1);
+        }}
+        stroke={isSelected ? "blue" : "green"}
+        strokeWidth={isSelected ? 3 : 2}
+        fill="rgba(0, 255, 0, 0.1)"
+      />
+      {isSelected && (
+        <Transformer
+          ref={trRef}
+          boundBoxFunc={(oldBox, newBox) => {
+            if (newBox.width < 10 || newBox.height < 10) {
+              return oldBox;
+            }
+            return newBox;
+          }}
+        />
+      )}
+    </>
+  );
+};
+
+export default function FloorAdminPlan({
+  imageUrl,
+  onSave,
+}: {
+  imageUrl: string;
+  onSave: (areas: any[]) => void;
+}) {
+  const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [areas, setAreas] = useState<any[]>([]);
+  const [newShape, setNewShape] = useState<any>(null);
+  const [tool, setTool] = useState<string>("select");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [polygonPoints, setPolygonPoints] = useState<number[]>([]);
+  const [isDrawingPolygon, setIsDrawingPolygon] = useState(false);
+  const isDrawing = useRef(false);
+  const stageRef = useRef<any>();
+
+  // Load background image
+  useEffect(() => {
+    const img = new window.Image();
+    img.src = imageUrl;
+    img.onload = () => setImage(img);
+  }, [imageUrl]);
+
+  // Handle keyboard events for Delete key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Delete" && selectedId) {
+        const updatedAreas = areas.filter(area => area.id !== selectedId);
+        setAreas(updatedAreas);
+        onSave(updatedAreas);
+        setSelectedId(null);
+      }
+      // ESC to cancel polygon drawing
+      if (e.key === "Escape" && isDrawingPolygon) {
+        setPolygonPoints([]);
+        setIsDrawingPolygon(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedId, areas, isDrawingPolygon, onSave]);
+
+  const handleMouseDown = (e: any) => {
+    // Check if we clicked on empty area
+    if (e.target === e.target.getStage()) {
+      setSelectedId(null);
+    }
+
+    // Only start drawing if we're not in select mode and Ctrl is held down
+    const isCtrlPressed = e.evt.ctrlKey;
+
+    if (tool !== "select" && isCtrlPressed) {
+      const { x, y } = e.target.getStage().getPointerPosition();
+
+      if (tool === "polygon") {
+        // Handle polygon drawing (click to add points)
+        if (!isDrawingPolygon) {
+          setPolygonPoints([x, y]);
+          setIsDrawingPolygon(true);
+        } else {
+          setPolygonPoints([...polygonPoints, x, y]);
+        }
+        return;
+      }
+
+      // For other shapes, start drawing immediately
+      isDrawing.current = true;
+
+      if (tool === "rect") {
+        setNewShape({ type: "rect", x, y, w: 0, h: 0, id: Date.now().toString(), startX: x, startY: y });
+      } else if (tool === "circle") {
+        setNewShape({ type: "circle", x, y, radius: 0, id: Date.now().toString() });
+      } else if (tool === "triangle") {
+        setNewShape({ type: "triangle", x, y, points: [0, 0, 0, 0, 0, 0], id: Date.now().toString(), startX: x, startY: y });
+      }
+    }
+  };
+
+  const handleMouseMove = (e: any) => {
+    if (!isDrawing.current || !newShape) return;
+    const { x, y } = e.target.getStage().getPointerPosition();
+
+    if (newShape.type === "rect") {
+      const startX = newShape.startX;
+      const startY = newShape.startY;
+      setNewShape({
+        ...newShape,
+        x: Math.min(x, startX),
+        y: Math.min(y, startY),
+        w: Math.abs(x - startX),
+        h: Math.abs(y - startY)
+      });
+    } else if (newShape.type === "circle") {
+      const dx = x - newShape.x;
+      const dy = y - newShape.y;
+      const radius = Math.sqrt(dx * dx + dy * dy);
+      setNewShape({ ...newShape, radius });
+    } else if (newShape.type === "triangle") {
+      const startX = newShape.startX;
+      const startY = newShape.startY;
+      const width = x - startX;
+      const height = y - startY;
+
+      // Create triangle points (top point, bottom left, bottom right)
+      const points = [
+        width / 2, 0,        // top point
+        0, height,           // bottom left
+        width, height        // bottom right
+      ];
+
+      setNewShape({
+        ...newShape,
+        x: startX,
+        y: startY,
+        points
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (newShape && isDrawing.current) {
+      // Check minimum size before adding
+      const isValidSize = (newShape.w > 5 || newShape.radius > 5 ||
+        (newShape.points && Math.max(...newShape.points) > 5));
+
+      if (isValidSize) {
+        const updated = [...areas, newShape];
+        setAreas(updated);
+        onSave(updated);
+      }
+      setNewShape(null);
+    }
+    isDrawing.current = false;
+  };
+
+  const handleDoubleClick = (e: any) => {
+    // Finish polygon on double click
+    if (isDrawingPolygon && polygonPoints.length >= 6) { // At least 3 points (6 coordinates)
+      const newPolygon = {
+        type: "polygon",
+        x: 0,
+        y: 0,
+        points: [...polygonPoints],
+        id: Date.now().toString()
+      };
+      const updated = [...areas, newPolygon];
+      setAreas(updated);
+      onSave(updated);
+      setPolygonPoints([]);
+      setIsDrawingPolygon(false);
+    }
+  };
+
+  const handleShapeSelect = (id: string) => {
+    setSelectedId(id);
+  };
+
+  const handleShapeChange = (updatedShape: any) => {
+    const updatedAreas = areas.map(area =>
+      area.id === updatedShape.id ? updatedShape : area
+    );
+    setAreas(updatedAreas);
+    onSave(updatedAreas);
+  };
+
+  const checkDeselect = (e: any) => {
+    const clickedOnEmpty = e.target === e.target.getStage();
+    if (clickedOnEmpty) {
+      setSelectedId(null);
+    }
+  };
+
+  const renderShape = (shape: any) => {
+    const commonProps = {
+      key: shape.id,
+      shape,
+      isSelected: shape.id === selectedId,
+      onSelect: () => handleShapeSelect(shape.id),
+      onChange: handleShapeChange
+    };
+
+    switch (shape.type) {
+      case "rect":
+        return <DraggableRect {...commonProps} />;
+      case "circle":
+        return <DraggableCircle {...commonProps} />;
+      case "triangle":
+        return <DraggableTriangle {...commonProps} />;
+      case "polygon":
+        return <DraggablePolygon {...commonProps} />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div style={{ display: "flex" }}>
+      {/* Toolbox */}
+      <Toolbox selectedTool={tool} onToolChange={setTool} />
+
+      <div style={{ flex: 1 }}>
+        {/* Instructions */}
+        <div style={{
+          background: "#e8f4f8",
+          padding: "10px",
+          marginBottom: "10px",
+          borderRadius: "4px",
+          fontSize: "14px"
+        }}>
+          <strong>Instructions:</strong>
+          <ul style={{ margin: "5px 0", paddingLeft: "20px" }}>
+            <li>Select a tool from the toolbox</li>
+            <li><strong>Hold Ctrl + Single click and drag</strong> to create shapes</li>
+            <li><strong>For polygons:</strong> Hold Ctrl + click to add points, double-click to finish</li>
+            <li>Click on shapes to select them (blue outline)</li>
+            <li>Drag selected shapes to move them</li>
+            <li>Use corner handles to resize selected shapes</li>
+            <li>Press Delete key to remove selected shapes</li>
+            <li>Press ESC to cancel polygon drawing</li>
+          </ul>
+        </div>
+
+        {/* Drawing Canvas */}
+        <Stage
+          ref={stageRef}
+          width={800}
+          height={600}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onDblClick={handleDoubleClick}
+          onClick={checkDeselect}
+          style={{ border: "1px solid #ddd", borderRadius: "4px" }}
+        >
+          <Layer>
+            {/* Background */}
+            {image && (
+              <KonvaImage image={image} width={800} height={600} listening={false} />
+            )}
+
+            {/* Saved shapes */}
+            {areas.map(renderShape)}
+
+            {/* Currently drawing shape */}
+            {newShape && (
+              <>
+                {newShape.type === "rect" && (
+                  <Rect
+                    x={newShape.x}
+                    y={newShape.y}
+                    width={newShape.w}
+                    height={newShape.h}
+                    stroke="blue"
+                    strokeWidth={2}
+                    dash={[4, 4]}
+                    fill="rgba(0, 0, 255, 0.1)"
+                  />
+                )}
+                {newShape.type === "circle" && (
+                  <Circle
+                    x={newShape.x}
+                    y={newShape.y}
+                    radius={newShape.radius}
+                    stroke="blue"
+                    strokeWidth={2}
+                    dash={[4, 4]}
+                    fill="rgba(0, 0, 255, 0.1)"
+                  />
+                )}
+                {newShape.type === "triangle" && (
+                  <Line
+                    x={newShape.x}
+                    y={newShape.y}
+                    points={newShape.points}
+                    closed={true}
+                    stroke="blue"
+                    strokeWidth={2}
+                    dash={[4, 4]}
+                    fill="rgba(0, 0, 255, 0.1)"
+                  />
+                )}
+              </>
+            )}
+
+            {/* Polygon in progress */}
+            {isDrawingPolygon && polygonPoints.length > 0 && (
+              <>
+                <Line
+                  points={polygonPoints}
+                  stroke="blue"
+                  strokeWidth={2}
+                  dash={[4, 4]}
+                  closed={polygonPoints.length >= 6}
+                  fill={polygonPoints.length >= 6 ? "rgba(0, 0, 255, 0.1)" : undefined}
+                />
+                {/* Show points */}
+                {polygonPoints.map((_, index) => {
+                  if (index % 2 === 0) {
+                    return (
+                      <Circle
+                        key={index}
+                        x={polygonPoints[index]}
+                        y={polygonPoints[index + 1]}
+                        radius={3}
+                        fill="blue"
+                      />
+                    );
+                  }
+                  return null;
+                })}
+              </>
+            )}
+          </Layer>
+        </Stage>
+
+        {/* Shape count display */}
+        <div style={{
+          marginTop: "10px",
+          padding: "10px",
+          background: "#f0f0f0",
+          borderRadius: "4px",
+          fontSize: "14px"
+        }}>
+          <strong>Areas created:</strong> {areas.length} shapes saved on screen
+          {selectedId && (
+            <span style={{ marginLeft: "20px", color: "#007bff" }}>
+              Selected: {areas.find(a => a.id === selectedId)?.type || 'Unknown'}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -108,7 +108,15 @@ export class GatewayService {
     if (!client) throw new NotFoundException(`Service ${service} not found`);
 
     // Step 1: Skip auth for auth service
-    if (service !== 'auth') {
+    if (service === 'auth') {
+      if (pattern === 'auth.refresh-token') {
+        const refreshToken = this.request.cookies['refreshToken'] as string;
+        if (!refreshToken) {
+          throw new UnauthorizedException('Missig token');
+        }
+        payload = { payload, cookies: { refreshToken } };
+      }
+    } else {
       const authHeader = this.request.headers['authorization'];
       if (!authHeader?.startsWith('Bearer ')) {
         throw new UnauthorizedException('Missing or malformed token');
@@ -137,7 +145,7 @@ export class GatewayService {
 
     // Step 2: Send message
     try {
-      const observable = client.send<T>(pattern, payload);
+      const observable = client.send<T>(pattern, payload || {});
       const result = await lastValueFrom<T>(observable);
       if (result.cookies && Array.isArray(result.cookies)) {
         result.cookies.forEach((cookie) => {

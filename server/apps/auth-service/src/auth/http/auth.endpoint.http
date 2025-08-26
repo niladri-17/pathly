@@ -1,3 +1,6 @@
+# @cookie-jar
+
+
 ### Register a new user
 POST http://localhost:8080/auth/auth/register
 Content-Type: application/json
@@ -43,11 +46,6 @@ Content-Type: application/json
 ### Refresh token
 POST http://localhost:8080/auth/auth/refresh-token
 Content-Type: application/json
-
-{
-  "email": "john@example.com",
-  "password": "supersecret123"
-}
 
 
 ### Forgot password
