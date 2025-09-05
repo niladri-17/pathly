@@ -1,7 +1,15 @@
 export interface JwtPayload {
-  sub: string;
-  email: string;
-  role: 'a' | 'u';
-  iat?: number;
-  exp?: number;
+  userInfo: {
+    id: string;
+    name: string;
+    email: string;
+    role: 'a' | 'u';
+    // permissionKey: string
+  };
+  orgInfo: {
+    id: string;
+    name: string;
+  };
+  iat: number;
+  exp: number;
 }

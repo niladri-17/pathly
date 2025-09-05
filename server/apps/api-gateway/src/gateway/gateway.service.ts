@@ -97,6 +97,108 @@ export class GatewayService {
     }
   }
 
+  // 🔹 Extracted auth handling into helpers
+  private async attachAuthForService(
+    service: string,
+    pattern: string,
+    payload: Record<string, any>,
+  ): Promise<Record<string, any>> {
+    if (service === 'auth') {
+      return this.handleAuthServicePayload(pattern, payload);
+    }
+    return this.handleSecuredServicePayload(payload);
+  }
+
+  private handleAuthServicePayload(
+    pattern: string,
+    payload: Record<string, any>,
+  ): Record<string, any> {
+    if (pattern === 'auth.refresh-token') {
+      const refreshToken = this.request.cookies['refreshToken'] as string;
+      if (!refreshToken) {
+        throw new UnauthorizedException('Missig token');
+      }
+      return { payload, cookies: { refreshToken } };
+    }
+    return payload;
+  }
+
+  private async handleSecuredServicePayload(
+    payload: Record<string, any>,
+  ): Promise<Record<string, any>> {
+    const authHeader = this.request.headers['authorization'];
+    if (!authHeader?.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Missing or malformed token');
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+      const user = await this.jwtService.verifyAsync<JwtPayload>(token, {
+        secret: this.appConfig.ACCESS_TOKEN.SECRET!,
+      });
+      return { payload, user };
+    } catch (error) {
+      if (error instanceof TokenExpiredError) {
+        throw new UnauthorizedException('Token expired');
+      }
+      throw new UnauthorizedException('Invalid token');
+    }
+  }
+
+  // 🔹 Extracted error handler
+  private handleRpcError(error: unknown): never {
+    this.logger.error(error);
+
+    // 🟢 Case 1: No message handler found in remote service
+    if (
+      typeof error === 'string' &&
+      error.includes('no matching message handler')
+    ) {
+      const httpError = {
+        success: false,
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'Not Found',
+        errors: [],
+        timestamp: new Date().toISOString(),
+      };
+      throw new NotFoundException(httpError);
+    }
+
+    // 🟢 Case 2: RpcException with { statusCode }
+    if (error?.statusCode && typeof error?.statusCode === 'number') {
+      throw new HttpException(error, error.statusCode);
+    }
+
+    // 🟢 Case 3: Nest default serialized error (status = "error")
+    if (error?.status === 'error') {
+      const httpError = {
+        success: false,
+        statusCode: 500,
+        message: error?.message || 'Unknown error',
+        errors: [],
+        timestamp: new Date().toISOString(),
+      };
+      throw new InternalServerErrorException(httpError);
+    }
+
+    // 🟢 Case 4: Connection error
+    if (error?.code === 'ECONNREFUSED') {
+      throw new ServiceUnavailableException({
+        success: false,
+        message: 'Service unavailable',
+        errors: [],
+        statusCode: 503,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // 🟢 Fallback
+    throw new InternalServerErrorException(
+      'Unexpected error from the downstream service',
+    );
+  }
+
   // Generic type T for safe return typing
   async sendMessage<T extends ApiSuccessResponse = ApiSuccessResponse>(
     service: string,
@@ -107,46 +209,14 @@ export class GatewayService {
     const client = this.clients[service];
     if (!client) throw new NotFoundException(`Service ${service} not found`);
 
-    // Step 1: Skip auth for auth service
-    if (service === 'auth') {
-      if (pattern === 'auth.refresh-token') {
-        const refreshToken = this.request.cookies['refreshToken'] as string;
-        if (!refreshToken) {
-          throw new UnauthorizedException('Missig token');
-        }
-        payload = { payload, cookies: { refreshToken } };
-      }
-    } else {
-      const authHeader = this.request.headers['authorization'];
-      if (!authHeader?.startsWith('Bearer ')) {
-        throw new UnauthorizedException('Missing or malformed token');
-      }
-
-      const token = authHeader.split(' ')[1];
-
-      let user: JwtPayload;
-      try {
-        user = await this.jwtService.verifyAsync<JwtPayload>(token, {
-          secret: this.appConfig.ACCESS_TOKEN.SECRET!,
-        });
-      } catch (error) {
-        if (
-          error instanceof TokenExpiredError
-          //  ||
-          // error?.name === 'TokenExpiredError'
-        ) {
-          throw new UnauthorizedException('Token expired');
-        }
-        throw new UnauthorizedException('Invalid token');
-      }
-
-      payload = { payload, user };
-    }
+    // Step 1: Handle auth/user injection
+    payload = await this.attachAuthForService(service, pattern, payload);
 
     // Step 2: Send message
     try {
       const observable = client.send<T>(pattern, payload || {});
       const result = await lastValueFrom<T>(observable);
+
       if (result.cookies && Array.isArray(result.cookies)) {
         result.cookies.forEach((cookie) => {
           this.request.res?.cookie(
@@ -163,56 +233,7 @@ export class GatewayService {
       // //! this will create circular reference since nestjs itselt will also try to send the response and here were tryto send the response through express
       //* so we are modifiying the response in the global interceptor
     } catch (error: unknown) {
-      this.logger.error(error);
-
-      // 🟢 Case 1: No message handler found in remote service
-      if (
-        typeof error === 'string' &&
-        error.includes('no matching message handler')
-      ) {
-        const httpError = {
-          success: false,
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'Not Found',
-          errors: [],
-          timestamp: new Date().toISOString(),
-        };
-        throw new NotFoundException(httpError);
-      }
-
-      // 🟢 Case 2: RpcException with { statusCode }
-      if (error?.statusCode && typeof error?.statusCode === 'number') {
-        throw new HttpException(error, error.statusCode);
-      }
-
-      // 🟢 Case 3: Nest default serialized error (status = "error")
-      if (error?.status === 'error') {
-        const httpError = {
-          success: false,
-          statusCode: 500,
-          message: error?.message || 'Unknown error',
-          errors: [],
-          timestamp: new Date().toISOString(),
-        };
-
-        throw new InternalServerErrorException(httpError);
-      }
-
-      // 🟢 Case 4: Connection error
-      if (error?.code === 'ECONNREFUSED') {
-        throw new ServiceUnavailableException({
-          success: false,
-          message: 'Service unavailable',
-          errors: [],
-          statusCode: 503,
-          timestamp: new Date().toISOString(),
-        });
-      }
-
-      // 🟢 Fallback
-      throw new InternalServerErrorException(
-        'Unexpected error from the downstream service',
-      );
+      this.handleRpcError(error);
     }
   }
 }

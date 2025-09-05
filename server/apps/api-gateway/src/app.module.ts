@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppConfigModule } from './config/config.module';
 import { GatewayModule } from './gateway/gateway.module';
-import { RequestAuthGuard } from './common/guards/request-auth.guard';
-import { JwtModule } from '@nestjs/jwt';
+// import { RequestAuthGuard } from './common/guards/request-auth.guard';
+// import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [

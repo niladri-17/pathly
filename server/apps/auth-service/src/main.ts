@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { AsyncMicroserviceOptions, Transport } from '@nestjs/microservices';
 import { RpcApiErrorException } from '@app/common/exceptions/rpc-api-error.exception';
+// import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const logger = new Logger('AUTH-SERVICE');
@@ -43,6 +44,16 @@ async function bootstrap() {
         },
       }),
     );
+
+    // const config = new DocumentBuilder()
+    //   .setTitle('Cats example')
+    //   .setDescription('The cats API description')
+    //   .setVersion('1.0')
+    //   .addTag('cats')
+    //   .build();
+
+    // const documentFactory = () => SwaggerModule.createDocument(app, config);
+    // SwaggerModule.setup('api', app, documentFactory);
 
     const gracefulShutdown = async (signal: string) => {
       logger.log(`❌ Received ${signal}, shutting down gracefully`);
